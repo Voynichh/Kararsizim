@@ -1,0 +1,7 @@
+{% if messages %}
+<div class="toasts" role="status" aria-live="polite">
+  {% for message in messages %}
+  <div class="toast toast--{{ message.level_tag|default:'info' }}" data-toast>{{ message }}</div>
+  {% endfor %}
+</div>
+{% endif %}

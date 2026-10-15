@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Sayfa bulunamadı — kararsızım{% endblock %}
+
+{% block content %}
+<section class="error-page">
+  <p class="error-page__code">404</p>
+  <h1 class="error-page__title">Aradığın sayfayı bulamadık.</h1>
+  <p class="error-page__text">Adres yanlış yazılmış ya da bu sayfa artık yok olabilir.</p>
+  <a class="btn btn--primary" href="/">Ana sayfaya dön</a>
+</section>
+{% endblock %}

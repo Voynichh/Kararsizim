@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Çok fazla istek — kararsızım{% endblock %}
+
+{% block content %}
+<section class="error-page">
+  <p class="error-page__code">429</p>
+  <h1 class="error-page__title">Biraz yavaşla, birazdan tekrar dene.</h1>
+  <p class="error-page__text">Kısa sürede çok fazla istek gönderdin.</p>
+  <a class="btn btn--primary" href="/">Ana sayfaya dön</a>
+</section>
+{% endblock %}

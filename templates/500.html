@@ -1,0 +1,26 @@
+{% load static %}<!doctype html>
+{# Django 500 sayfasını bağlam (context) olmadan render eder; bu yüzden base.html'den türetilmez. #}
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Bir sorun oluştu — kararsızım</title>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="logo" href="/">kararsızım<span class="logo__q" aria-hidden="true">?</span></a>
+    </div>
+  </header>
+  <main class="container">
+    <section class="error-page">
+      <p class="error-page__code">500</p>
+      <h1 class="error-page__title">Bir şeyler ters gitti.</h1>
+      <p class="error-page__text">Sorun bizde. Biraz sonra tekrar dene.</p>
+      <a class="btn btn--primary" href="/">Ana sayfaya dön</a>
+    </section>
+  </main>
+</body>
+</html>
