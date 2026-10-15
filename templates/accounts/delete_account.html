@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Hesabı sil — kararsızım{% endblock %}
+
+{% block content %}
+<section class="card auth-card danger-zone">
+  <h1 class="page-title">Hesabını silmek üzeresin</h1>
+  <p>Hesabın ve açtığın tüm anketler (onlara verilen oylarla birlikte) <strong>kalıcı olarak</strong> silinir. Başka anketlere verdiğin oylar sonuçlarda kalır, ancak sana bağlı olmaktan çıkar.</p>
+  <p class="muted">Onaylamak için parolanı gir.</p>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "partials/form_errors.html" %}
+    {% for field in form %}{% include "partials/form_field.html" %}{% endfor %}
+    <button type="submit" class="btn btn--danger btn--block">Hesabımı kalıcı olarak sil</button>
+  </form>
+
+  <p class="auth-card__alt"><a href="{% url 'accounts:settings' %}">Vazgeç</a></p>
+</section>
+{% endblock %}

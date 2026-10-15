@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Gizlilik — kararsızım{% endblock %}
+
+{% block content %}
+<article class="card prose">
+  <h1 class="page-title">Gizlilik</h1>
+  <p class="muted">Kısaca: sadece işimiz için gereken veriyi tutuyoruz, kimin neye oy verdiğini kimseye göstermiyoruz.</p>
+
+  <h2>Hangi verileri topluyoruz, neden?</h2>
+  <ul>
+    <li><strong>E-posta adresi:</strong> Giriş yapabilmen için. Başka hiçbir kullanıcıya gösterilmez; yalnızca hesap sayfanda sen görürsün.</li>
+    <li><strong>Kullanıcı adı:</strong> Açtığın anketlerde görünür. Herkese açıktır.</li>
+    <li><strong>Parola:</strong> Düz metin olarak saklanmaz; geri döndürülemeyen güçlü bir yöntemle (Argon2) şifrelenir.</li>
+    <li><strong>Anketlerin ve oyların:</strong> Açtığın anketler ve verdiğin oylar. Kimin hangi seçeneğe oy verdiği hiçbir kullanıcıya, anketin sahibine bile gösterilmez; yalnızca toplam sonuçlar görünür.</li>
+    <li><strong>Hesap tarihleri:</strong> Kayıt tarihin ve son giriş zamanın.</li>
+  </ul>
+  <p>Başka veri toplamıyoruz: reklam, analiz ya da üçüncü taraf takip kodu yok.</p>
+
+  <h2>Çerezler</h2>
+  <p>Yalnızca çalışmak için zorunlu olanları kullanıyoruz:</p>
+  <ul>
+    <li><strong>Oturum çerezi:</strong> Giriş yaptığını hatırlar.</li>
+    <li><strong>CSRF çerezi:</strong> Formların başkaları tarafından sahte olarak gönderilmesini engeller.</li>
+    <li><strong>Oy çerezi (<code>kv_voter</code>):</strong> Üye olmadan oy verdiğinde, aynı ankete ikinci kez oy vermeni engellemek için rastgele bir kimlik tutar. Seni tanımlayan bir bilgi içermez.</li>
+  </ul>
+
+  <h2>IP adresi</h2>
+  <p>IP adresin, kötüye kullanımı (ör. parola deneme saldırıları ve spam) yavaşlatmak için kısa süreli sayaçlarda kullanılır. Bu sayaçlarda IP adresin olduğu gibi değil, geri çevrilemez bir özet olarak bulunur ve süre dolunca kendiliğinden silinir. IP adresin kalıcı olarak saklanmaz.</p>
+
+  <h2>Verilerin nerede tutulduğu</h2>
+  <p>Veriler Supabase üzerindeki bir PostgreSQL veritabanında tutulur; uygulama Vercel üzerinde çalışır.</p>
+
+  <h2>Hesabını silmek</h2>
+  <p>Giriş yaptıktan sonra <em>Hesabım</em> sayfasından hesabını silebilirsin. Silince e-postan, kullanıcı adın, parolan ve açtığın anketler (onlara gelen oylarla birlikte) kalıcı olarak silinir. Başka anketlere verdiğin oylar toplam sonuçlarda kalır; ancak artık sana bağlı değildir.</p>
+
+  <p class="muted">Bu sayfa hukuki danışmanlık yerine geçmez.</p>
+</article>
+{% endblock %}

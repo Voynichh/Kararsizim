@@ -292,6 +292,121 @@ main.container {
   color: var(--text-muted);
 }
 
+/* --- Navigasyon ---------------------------------------------------------- */
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 8px;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+  color: var(--text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.inline-form {
+  display: inline;
+  margin: 0;
+}
+
+.btn--ghost {
+  background: transparent;
+}
+
+/* --- Sayfa içeriği ------------------------------------------------------- */
+
+.page-title {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.stack {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+main.container > .card + .card {
+  margin-top: 16px;
+}
+
+.auth-card__alt {
+  margin: 20px 0 0;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.field__help {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.form-errors {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  background: rgba(242, 102, 122, 0.1);
+  color: var(--danger);
+}
+
+.form-errors p {
+  margin: 0;
+}
+
+.info-list {
+  margin: 16px 0 0;
+}
+
+.info-list > div {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.info-list dt {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.info-list dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.danger-zone {
+  border-color: rgba(242, 102, 122, 0.45);
+}
+
+.danger-zone h2 {
+  font-size: 1.1rem;
+}
+
+.prose h2 {
+  margin-top: 1.6em;
+  font-size: 1.15rem;
+}
+
+.prose ul {
+  padding-left: 1.2em;
+}
+
+.prose li {
+  margin-bottom: 0.5em;
+}
+
 /* --- Erişilebilirlik ----------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {

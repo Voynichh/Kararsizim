@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Hesabım — kararsızım{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1 class="page-title">Hesabım</h1>
+
+  <dl class="info-list">
+    <div>
+      <dt>Kullanıcı adı</dt>
+      <dd>@{{ user.username }} <span class="muted">(herkese açık)</span></dd>
+    </div>
+    <div>
+      <dt>E-posta</dt>
+      <dd>{{ user.email }} <span class="muted">(yalnızca sen görürsün)</span></dd>
+    </div>
+  </dl>
+
+  <div class="stack">
+    <a class="btn btn--block" href="{% url 'accounts:password_change' %}">Parolayı değiştir</a>
+  </div>
+</section>
+
+<section class="card danger-zone">
+  <h2>Hesabı sil</h2>
+  <p class="muted">Hesabını ve açtığın anketleri kalıcı olarak silersin. Bu işlem geri alınamaz.</p>
+  <a class="btn btn--danger" href="{% url 'accounts:delete' %}">Hesabımı sil</a>
+</section>
+{% endblock %}
