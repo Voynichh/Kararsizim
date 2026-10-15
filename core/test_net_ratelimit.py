@@ -81,6 +81,39 @@ class RateLimitTests(TestCase):
             ratelimit.record("t", "kimlik", self.RULE)
         self.assertTrue(ratelimit.is_limited("t", "kimlik", self.RULE))
 
+    def _expiry_seconds_from_now(self):
+        from datetime import datetime, timezone as dt_timezone
+        import time as _time
+
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT expires FROM kv_cache")
+            (expires,) = cursor.fetchone()
+        if isinstance(expires, str):
+            expires = datetime.fromisoformat(expires)
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=dt_timezone.utc)
+        return expires.timestamp() - _time.time()
+
+    def test_counter_expires_at_window_end_not_after_cache_default_timeout(self):
+        # cache.incr() suresini varsayilan 300 sn'ye sifirlardi; uzun pencereler kisalirdi.
+        import time as _time
+
+        rule = (3, 3600)
+        for _ in range(3):
+            ratelimit.record("ttl", "kimlik", rule)
+        expected = 3600 - (_time.time() % 3600) + 1
+        self.assertAlmostEqual(self._expiry_seconds_from_now(), expected, delta=5)
+
+    def test_record_does_not_trigger_duplicate_key_errors_on_repeat_hits(self):
+        # Mevcut anahtar icin cache.add() denenmemeli (veritabani loguna "duplicate key" duserdi).
+        from unittest import mock
+
+        ratelimit.record("t", "kimlik", self.RULE)
+        with mock.patch.object(ratelimit.cache, "add", wraps=ratelimit.cache.add) as add:
+            for _ in range(5):
+                ratelimit.record("t", "kimlik", self.RULE)
+        add.assert_not_called()
+
     def test_cache_keys_contain_no_raw_ip_or_email(self):
         ratelimit.hit("login_ip", "203.0.113.7", self.RULE)
         ratelimit.hit("login_email", "gizli.adres@example.com", self.RULE)

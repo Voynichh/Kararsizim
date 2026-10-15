@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -89,6 +90,10 @@ ASGI_APPLICATION = "config.asgi.application"
 # --- Veritabani ------------------------------------------------------------
 
 _database_url = os.environ.get("DATABASE_URL", "").strip()
+if len(sys.argv) > 1 and sys.argv[1] == "test":
+    # `manage.py test` gercek (Supabase) veritabanina asla baglanmaz: varsayilan SQLite'tir.
+    # Ozellikle baska bir PostgreSQL'de test etmek icin TEST_DATABASE_URL verilir.
+    _database_url = os.environ.get("TEST_DATABASE_URL", "").strip()
 if _database_url:
     DATABASES = {
         "default": dj_database_url.parse(

@@ -24,8 +24,8 @@ POLL_CREATE_USER = (10, HOUR)
 VOTE_IP = (30, MINUTE)
 
 
-def _key(scope, identifier, window):
-    bucket = int(time.time() // window)
+def _key(scope, identifier, window, now=None):
+    bucket = int((time.time() if now is None else now) // window)
     return f"rl:{scope}:{hash_identifier(f'{scope}:{identifier}')}:{bucket}"
 
 
@@ -36,17 +36,24 @@ def is_limited(scope, identifier, rule):
 
 
 def record(scope, identifier, rule):
-    """Sayaci bir artirir ve yeni degeri dondurur."""
+    """Sayaci bir artirir ve yeni degeri dondurur.
+
+    Kayit pencerenin bitisinde kendiliginden gecersiz olur. `cache.incr()` kullanilmaz: suresini
+    varsayilan 300 sn'ye sifirlar ve 15 dk/1 saatlik pencereleri kisaltir. `cache.add()` yalnizca
+    anahtar yokken denenir; yoksa her tekrarda veritabani "duplicate key" hatasi loglardi.
+    """
     _, window = rule
-    key = _key(scope, identifier, window)
-    timeout = window + 1
-    if cache.add(key, 1, timeout=timeout):
-        return 1
-    try:
-        return cache.incr(key)
-    except ValueError:  # anahtar araya giren sure dolumuyla silindi
-        cache.set(key, 1, timeout=timeout)
-        return 1
+    now = time.time()
+    key = _key(scope, identifier, window, now)
+    timeout = int(window - (now % window)) + 1  # pencerenin bitisine kadar
+    count = cache.get(key)
+    if count is None:
+        if cache.add(key, 1, timeout=timeout):
+            return 1
+        count = cache.get(key) or 0  # ayni anda baska istek olusturdu
+    count += 1
+    cache.set(key, count, timeout=timeout)
+    return count
 
 
 def hit(scope, identifier, rule):
