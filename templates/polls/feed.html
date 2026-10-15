@@ -8,9 +8,9 @@
   <a class="btn btn--primary btn--block" href="{% url 'polls:create' %}">Anket aç</a>
 </div>
 
-{% if page.object_list %}
+{% if polls %}
   <div class="feed">
-    {% for poll in page.object_list %}
+    {% for poll in polls %}
       {% include "partials/poll_card.html" with link=True %}
     {% endfor %}
   </div>

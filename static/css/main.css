@@ -461,6 +461,88 @@ main.container > .card + .card {
   overflow-wrap: anywhere;
 }
 
+.option--button {
+  width: 100%;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.option--button:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.vote-form--busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.result {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.result__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: var(--accent-soft);
+  transition: width 0.6s ease;
+}
+
+.result--top .result__bar {
+  background: rgba(61, 220, 151, 0.2);
+}
+
+.result--mine {
+  border-color: var(--accent);
+}
+
+.result__label,
+.result__stat {
+  position: relative;
+}
+
+.result__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.result__stat {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.result__badge {
+  display: inline-block;
+  margin-left: 4px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.poll-card__total,
+.poll-card__note {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 .pager {
   display: flex;
   align-items: center;

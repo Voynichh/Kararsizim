@@ -1,11 +1,31 @@
-{% load humanize %}<article class="card poll-card">
+{% load humanize %}<article class="card poll-card" id="poll-{{ poll.pk }}">
   <p class="poll-card__meta">@{{ poll.author.username }} · <time datetime="{{ poll.created_at|date:'c' }}">{{ poll.created_at|naturaltime }}</time></p>
   <h2 class="poll-card__question">
     {% if link %}<a href="{% url 'polls:detail' poll.pk %}">{{ poll.question }}</a>{% else %}{{ poll.question }}{% endif %}
   </h2>
-  <ul class="option-list">
+
+  {% if poll.show_results %}
+  <ul class="option-list" data-results>
     {% for option in poll.options.all %}
-    <li class="option">{{ option.text }}</li>
+    <li class="result{% if option.is_mine %} result--mine{% endif %}{% if option.is_top %} result--top{% endif %}" data-percent="{{ option.percent }}">
+      <span class="result__bar" aria-hidden="true"></span>
+      <span class="result__label">{{ option.text }}{% if option.is_mine %} <span class="result__badge">✓ senin oyun</span>{% endif %}</span>
+      <span class="result__stat">%{{ option.percent }} · {{ option.vote_count }} oy</span>
+    </li>
     {% endfor %}
   </ul>
+  {% if poll.is_owner %}<p class="poll-card__note">Bu senin anketin; sonuçları görüyorsun.</p>{% endif %}
+  {% else %}
+  <form class="vote-form" method="post" action="{% url 'polls:vote' poll.pk %}" data-vote-form>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}#poll-{{ poll.pk }}">
+    <ul class="option-list">
+      {% for option in poll.options.all %}
+      <li><button type="submit" class="option option--button" name="option" value="{{ option.pk }}">{{ option.text }}</button></li>
+      {% endfor %}
+    </ul>
+  </form>
+  {% endif %}
+
+  <p class="poll-card__total" data-total-votes>{{ poll.total_votes }} oy</p>
 </article>

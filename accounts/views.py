@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 
 from core import ratelimit
 from core.net import get_client_ip, get_safe_next
+from polls.utils import anonymize_votes
 
 from .forms import DeleteAccountForm, LoginForm, PasswordChangeForm, SignupForm
 
@@ -103,9 +104,10 @@ def delete_account(request):
         if form.is_valid():
             user = request.user
             with transaction.atomic():
-                # TODO(Faz 3): kullanicinin baska anketlere verdigi oylari anonimlestir
-                # (user=NULL, voter_key="d:<uuid4>"); anketleri ve onlara gelen oylar
-                # CASCADE ile silinir.
+                # Baska anketlere verilen oylar sayimda kalir ama kisiyle baglantisi kopar
+                # (user=NULL, voter_key="d:<uuid4>"). Kullanicinin anketleri ve onlara gelen
+                # oylar CASCADE ile silinir.
+                anonymize_votes(user)
                 user.delete()
             logout(request)
             messages.success(request, "Hesabın silindi.")

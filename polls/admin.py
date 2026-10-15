@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import MAX_OPTIONS, MIN_OPTIONS, Option, Poll
+from .models import MAX_OPTIONS, MIN_OPTIONS, Option, Poll, Vote
 
 
 class OptionInline(admin.TabularInline):
@@ -20,3 +20,23 @@ class PollAdmin(admin.ModelAdmin):
     raw_id_fields = ("author",)
     date_hierarchy = "created_at"
     inlines = [OptionInline]
+
+
+@admin.register(Vote)
+class VoteAdmin(admin.ModelAdmin):
+    """Salt okunur. Oy gizliligi: kullanici ve voter_key admin arayuzunde de gosterilmez."""
+
+    list_display = ("poll", "option", "created_at")
+    list_filter = ("created_at",)
+    fields = ("poll", "option", "created_at")
+    readonly_fields = ("poll", "option", "created_at")
+    list_select_related = ("poll", "option")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

@@ -47,3 +47,33 @@ class Option(models.Model):
 
     def __str__(self):
         return self.text
+
+
+class Vote(models.Model):
+    """Tek bir oy. Oy sayilari sayac alaninda degil, Count ile hesaplanir.
+
+    `voter_key`: uye icin "u:<id>", anonim icin "a:<uuid>", hesabi silinmis uye icin "d:<uuid>".
+    Kimin neye oy verdigi hicbir yerde gosterilmez.
+    """
+
+    poll = models.ForeignKey(Poll, on_delete=models.CASCADE, related_name="votes")
+    option = models.ForeignKey(Option, on_delete=models.CASCADE, related_name="votes")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="votes",
+    )
+    voter_key = models.CharField(max_length=64)
+    created_at = models.DateTimeField("oy zamanı", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "oy"
+        verbose_name_plural = "oylar"
+        constraints = [
+            models.UniqueConstraint(fields=["poll", "voter_key"], name="polls_vote_poll_voter_unique"),
+        ]
+
+    def __str__(self):
+        return f"{self.poll_id} → {self.option_id}"
