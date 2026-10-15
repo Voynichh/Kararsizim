@@ -221,15 +221,13 @@ main.container {
 /* --- Mesajlar (toast) ---------------------------------------------------- */
 
 .toasts {
-  position: fixed;
-  top: 72px;
-  left: 50%;
-  z-index: 20;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: min(92vw, 608px);
-  transform: translateX(-50%);
+  width: 100%;
+  max-width: 640px;
+  margin: 12px auto 0;
+  padding-inline: 16px;
 }
 
 .toast {
@@ -299,14 +297,18 @@ main.container {
   align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 4px 8px;
+  gap: 4px 6px;
+}
+
+.site-nav .btn {
+  padding-inline: 14px;
 }
 
 .nav-link {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 0 8px;
+  padding: 0 6px;
   color: var(--text);
   font-weight: 600;
   overflow-wrap: anywhere;
@@ -405,6 +407,102 @@ main.container > .card + .card {
 
 .prose li {
   margin-bottom: 0.5em;
+}
+
+/* --- Anket kartı, akış ve form ------------------------------------------- */
+
+[hidden] {
+  display: none !important;
+}
+
+.feed {
+  display: grid;
+  gap: 16px;
+}
+
+.feed-actions {
+  margin-bottom: 20px;
+}
+
+.poll-card__meta {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.poll-card__question {
+  margin: 0 0 16px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.poll-card__question a {
+  color: var(--text);
+}
+
+.option-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  overflow-wrap: anywhere;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.options {
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+}
+
+.options legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.option-field__row {
+  display: flex;
+  gap: 8px;
+}
+
+.option-field__row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.option-field label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 /* --- Erişilebilirlik ----------------------------------------------------- */

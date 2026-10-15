@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Çalışma kuralları (özet)
 
-- Her seferde yalnızca istenen fazı uygula; sonraki fazlara geçme. Mevcut durum: **Faz 0 ve 1 tamam** (iskelet, ayarlar, CSP, `accounts.User`, tema; kayıt/giriş/hesap, hız sınırlama, gizlilik sayfası). Sıradaki Faz 2.
+- Her seferde yalnızca istenen fazı uygula; sonraki fazlara geçme. Mevcut durum: **Faz 0, 1 ve 2 tamam** (iskelet, ayarlar, CSP, `accounts.User`, tema; kayıt/giriş/hesap, hız sınırlama, gizlilik sayfası; anket oluşturma/akış/detay/silme). Sıradaki Faz 3 (oy verme).
 - Bölüm 10 (güvenlik/gizlilik) pazarlık konusu değildir; çelişki varsa dur ve sor.
 - Yalnızca Bölüm 4'teki paketler; başkası gerekirse önce sor. Sürümler `requirements.txt`'te `==` ile sabit.
 - Kod İngilizce, kullanıcıya görünen tüm metinler Türkçe. E-posta adresi hiçbir yerde görünmez (yalnızca `/hesap/`'ta sahibine).
@@ -45,4 +45,7 @@ pip-audit -r requirements.txt              # bağımlılık açık taraması
 - **İstemci IP'si** yalnızca `core.net.get_client_ip` ile okunur: `TRUST_PROXY_IP_HEADER=True` iken `X-Forwarded-For`'un en sağdaki değeri (Vercel bu başlığı kendisi yazar), değilse `REMOTE_ADDR`. Yönlendirmelerde `next` yalnızca `core.net.get_safe_next` ile alınır (açık yönlendirme yok).
 - **Hesap silme** (`accounts/views.py:delete_account`): `Vote` modeli Faz 3'te geleceği için oyları anonimleştirme kısmı `TODO(Faz 3)` olarak bırakıldı. `templates/core/privacy.html` ürünün tamamını (oy çerezi `kv_voter` dahil) anlatır; Faz 3/4'te metnin gerçeğe uyduğu tekrar kontrol edilmeli.
 - **Şablonlar** `templates/` altında (proje seviyesi, `APP_DIRS` de açık). `500.html` bilerek `base.html`'den türemez: Django 500'ü bağlamsız render eder. Formlar `partials/form_field.html` / `form_errors.html` ile render edilir. Header'daki "Anket aç" bağlantısı Faz 2'de eklenecek.
+- **Anket formu** (`polls/forms.py:PollForm`) Django alanlarıyla değil, aynı adlı (`option`) birden fazla input olarak çalışır; sunucu `request.POST.getlist("option")`'ı okur, boşları atar, 2–5 sınırını ve tekrarları kendisi doğrular (6. alan gönderilirse reddedilir). Şablon sabit 5 slot çizer (`form.option_slots`); JS yoksa 5'i de görünür, JS ilk 2'yi gösterip ekle/kaldır ekler. `author` formda yoktur, `form.save(author=request.user)` ile atanır. Oluşturma limiti (`POLL_CREATE_USER`) yalnızca **başarılı** kayıtlarda sayılır.
+- **Yetki:** silme gibi işlemlerde sahiplik sorguda (`get_object_or_404(Poll, pk=pk, author=request.user)`) uygulanır; başkasının anketi 404 verir, var olmayan anketle aynı yanıt.
+- **Akış sorgu sayısı** anket sayısından bağımsız olmalı (`select_related("author")` + `prefetch_related("options")`; `polls/tests.py` bunu test eder). Faz 3'te oy sayıları da `Count` ile aynı sorgularda eklenmeli.
 - **Uygulamalar:** `accounts` (kullanıcı), `polls` (anket/seçenek/oy; Faz 0'da yalnızca boş akış view'ı), `core` (ortak yardımcılar: `net.py`, `ratelimit.py`, gizlilik sayfası). Oy sayıları sayaç alanında değil `Count` ile hesaplanacak; tekrar oy engeli `Vote(poll, voter_key)` benzersizlik kısıtıyla veritabanı seviyesinde (Bölüm 7).

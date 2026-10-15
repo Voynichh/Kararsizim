@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Anket aç — kararsızım{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h1 class="page-title">Anket aç</h1>
+  <p class="muted">Kararsız kaldığın şeyi yaz, 2 ile 5 arasında seçenek ekle.</p>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "partials/form_errors.html" %}
+    {% include "partials/form_field.html" with field=form.question %}
+
+    <fieldset class="options" data-option-list data-min="2">
+      <legend>Seçenekler</legend>
+      {% for slot in form.option_slots %}
+      <div class="field option-field" data-option-item{% if slot.error %} data-has-error{% endif %}>
+        <label for="id_option_{{ slot.number }}">Seçenek {{ slot.number }}</label>
+        <div class="option-field__row">
+          <input type="text" name="option" id="id_option_{{ slot.number }}" value="{{ slot.value }}" maxlength="{{ slot.maxlength }}" autocomplete="off"{% if slot.required %} required{% endif %}>
+          {% if not slot.required %}
+          <button type="button" class="btn btn--ghost option-field__remove" data-remove-option aria-label="Seçenek {{ slot.number }}'i kaldır" hidden>Kaldır</button>
+          {% endif %}
+        </div>
+        {% if slot.error %}<p class="field__error" role="alert">{{ slot.error }}</p>{% endif %}
+      </div>
+      {% endfor %}
+      <button type="button" class="btn btn--block option-add" data-add-option hidden>+ Seçenek ekle</button>
+    </fieldset>
+
+    <button type="submit" class="btn btn--primary btn--block">Yayınla</button>
+  </form>
+</section>
+{% endblock %}

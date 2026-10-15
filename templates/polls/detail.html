@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ poll.question }} — kararsızım{% endblock %}
+
+{% block content %}
+{% include "partials/poll_card.html" %}
+
+<div class="detail-actions">
+  <a href="{% url 'polls:feed' %}">← Tüm anketler</a>
+  {% if user.is_authenticated and user.pk == poll.author_id %}
+    <a class="btn btn--danger" href="{% url 'polls:delete' poll.pk %}">Anketi sil</a>
+  {% endif %}
+</div>
+{% endblock %}

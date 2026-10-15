@@ -1,10 +1,39 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block title %}kararsızım — kararsız kaldığında sor{% endblock %}
 
 {% block content %}
-<section class="empty-state">
-  <p class="empty-state__title">Henüz kimse kararsız değil.</p>
-  <p class="empty-state__text">İlk anketi sen aç!</p>
-</section>
+<div class="feed-actions">
+  <a class="btn btn--primary btn--block" href="{% url 'polls:create' %}">Anket aç</a>
+</div>
+
+{% if page.object_list %}
+  <div class="feed">
+    {% for poll in page.object_list %}
+      {% include "partials/poll_card.html" with link=True %}
+    {% endfor %}
+  </div>
+
+  {% if page.has_other_pages %}
+  <nav class="pager" aria-label="Sayfalar">
+    {% if page.has_previous %}
+      <a class="btn" href="?page={{ page.previous_page_number }}" rel="prev">← Önceki</a>
+    {% else %}
+      <span></span>
+    {% endif %}
+    <span class="muted">{{ page.number }} / {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}
+      <a class="btn" href="?page={{ page.next_page_number }}" rel="next">Sonraki →</a>
+    {% else %}
+      <span></span>
+    {% endif %}
+  </nav>
+  {% endif %}
+{% else %}
+  <section class="empty-state">
+    <p class="empty-state__title">Henüz kimse kararsız değil.</p>
+    <p class="empty-state__text"><a href="{% url 'polls:create' %}">İlk anketi sen aç!</a></p>
+  </section>
+{% endif %}
 {% endblock %}
