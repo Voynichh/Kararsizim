@@ -529,8 +529,16 @@ main.container > .card + .card {
 }
 
 .vote-form--busy {
-  opacity: 0.6;
   pointer-events: none;
+}
+
+.vote-form--busy .option:not(.option--chosen) {
+  opacity: 0.5;
+}
+
+.option--chosen {
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .result {

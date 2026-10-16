@@ -1,4 +1,4 @@
-{% load humanize %}<article class="card poll-card" id="poll-{{ poll.pk }}">
+{% load humanize %}<article class="card poll-card" id="poll-{{ poll.pk }}" data-poll-id="{{ poll.pk }}" data-live-url="{% url 'polls:results' %}">
   <p class="poll-card__meta">@{{ poll.author.username }} · <time datetime="{{ poll.created_at|date:'c' }}">{{ poll.created_at|naturaltime }}</time></p>
   {% if as_h1 %}<h1 class="poll-card__question">{{ poll.question }}</h1>
   {% else %}<h2 class="poll-card__question">
@@ -8,7 +8,7 @@
   {% if poll.show_results %}
   <ul class="option-list" data-results>
     {% for option in poll.options.all %}
-    <li class="result{% if option.is_mine %} result--mine{% endif %}{% if option.is_top %} result--top{% endif %}" data-percent="{{ option.percent }}">
+    <li class="result{% if option.is_mine %} result--mine{% endif %}{% if option.is_top %} result--top{% endif %}" data-percent="{{ option.percent }}" data-option-id="{{ option.pk }}">
       <span class="result__bar" aria-hidden="true"></span>
       <span class="result__label">{{ option.text }}{% if option.is_mine %} <span class="result__badge">✓ senin oyun</span>{% endif %}</span>
       <span class="result__stat">%{{ option.percent }} · {{ option.vote_count }} oy</span>

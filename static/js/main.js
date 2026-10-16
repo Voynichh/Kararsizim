@@ -105,6 +105,7 @@
       li.classList.add("result--top");
     }
     li.setAttribute("data-percent", String(option.percent));
+    li.setAttribute("data-option-id", String(option.id));
 
     var bar = document.createElement("span");
     bar.className = "result__bar";
@@ -163,9 +164,12 @@
         }
         event.preventDefault();
         var body = new URLSearchParams(new FormData(form, submitter));
+        // Anında geri bildirim: seçilen düğme hemen vurgulanır, sunucu yanıtı gelince sonuçlar açılır.
+        submitter.classList.add("option--chosen");
         form.classList.add("vote-form--busy");
 
         function fallback() {
+          submitter.classList.remove("option--chosen");
           form.classList.remove("vote-form--busy");
           form.setAttribute("data-no-ajax", "");
           form.requestSubmit(submitter);
@@ -193,6 +197,116 @@
           .catch(fallback);
       });
     });
+  }
+
+  // Canlı güncelleme: sayfadaki anketlerin sayıları birkaç saniyede bir yenilenir (F5 gerekmez).
+  // Seçenek bazlı sonuçları sunucu yalnızca oy vermiş kişiye ve anket sahibine gönderir.
+  function updateCard(card, data) {
+    var total = card.querySelector("[data-total-votes]");
+    if (total && typeof data.total_votes === "number") {
+      total.textContent = data.total_votes + " oy";
+    }
+    if (!data.options || !card.querySelector("[data-results]")) {
+      return;
+    }
+    var maxVotes = data.options.reduce(function (max, option) {
+      return Math.max(max, option.votes);
+    }, 0);
+    data.options.forEach(function (option) {
+      var item = card.querySelector('.result[data-option-id="' + option.id + '"]');
+      if (!item) {
+        return;
+      }
+      item.setAttribute("data-percent", String(option.percent));
+      item.classList.toggle("result--top", maxVotes > 0 && option.votes === maxVotes);
+      var stat = item.querySelector(".result__stat");
+      if (stat) {
+        stat.textContent = "%" + option.percent + " · " + option.votes + " oy";
+      }
+      var bar = item.querySelector(".result__bar");
+      if (bar) {
+        bar.style.width = option.percent + "%";
+      }
+    });
+  }
+
+  function initLiveResults() {
+    var first = document.querySelector(".poll-card[data-live-url]");
+    if (!first || !window.fetch) {
+      return;
+    }
+    var url = first.getAttribute("data-live-url");
+    var BASE_DELAY = 5000;
+    var MAX_DELAY = 60000;
+    var delay = BASE_DELAY;
+    var timer = null;
+    var busy = false;
+
+    function schedule() {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(tick, delay);
+    }
+
+    function tick() {
+      if (document.hidden || busy) {
+        schedule();
+        return;
+      }
+      var cards = {};
+      var ids = [];
+      document.querySelectorAll(".poll-card[data-poll-id]").forEach(function (card) {
+        var id = card.getAttribute("data-poll-id");
+        if (!cards[id] && ids.length < 20) {
+          cards[id] = card;
+          ids.push(id);
+        }
+      });
+      if (!ids.length) {
+        return;
+      }
+      busy = true;
+      window
+        .fetch(url + "?ids=" + ids.join(","), {
+          headers: { Accept: "application/json" },
+          credentials: "same-origin",
+        })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("live failed");
+          }
+          return response.json();
+        })
+        .then(function (data) {
+          if (!data || data.ok !== true) {
+            throw new Error("live failed");
+          }
+          data.polls.forEach(function (item) {
+            // Oy verme sürerken (form meşgulken) o kartın sayıları ezilmez.
+            var card = cards[String(item.id)];
+            if (card && !card.querySelector(".vote-form--busy")) {
+              updateCard(card, item);
+            }
+          });
+          delay = BASE_DELAY;
+        })
+        .catch(function () {
+          // Hata olursa seyrekleştir; sayfa yine de çalışır.
+          delay = Math.min(delay * 2, MAX_DELAY);
+        })
+        .then(function () {
+          busy = false;
+          schedule();
+        });
+    }
+
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) {
+        delay = BASE_DELAY;
+        window.clearTimeout(timer);
+        tick();
+      }
+    });
+    schedule();
   }
 
   // "Linki kopyala": yalnızca Pano API'si varsa gösterilir (yoksa düğme gizli kalır).
@@ -228,6 +342,7 @@
     initOptionList();
     fillBars(document);
     initVoteForms();
+    initLiveResults();
     initCopyLink();
   });
 })();

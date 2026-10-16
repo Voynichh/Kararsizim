@@ -397,6 +397,89 @@ class QueryCountTests(VoteTestCase):
         self.assertEqual(polls[other.pk].total_votes, 1)
 
 
+class LiveResultsTests(VoteTestCase):
+    """GET /anket/sonuclar/: canli guncelleme ucu; gorunurluk kurali sayfalarla aynidir."""
+
+    def live(self, client=None, ids=None, **extra):
+        client = client or self.client
+        ids = ids if ids is not None else str(self.poll.pk)
+        return client.get(f"/anket/sonuclar/?ids={ids}", **extra)
+
+    def item(self, response):
+        (item,) = response.json()["polls"]
+        return item
+
+    def test_visitor_who_has_not_voted_gets_only_total_votes(self):
+        self.vote(self.sinema, client=Client())
+        item = self.item(self.live())
+        self.assertEqual(item, {"id": self.poll.pk, "total_votes": 1})
+
+    def test_voter_gets_live_option_counts(self):
+        voter = Client()
+        self.vote(self.sinema, client=voter)
+        self.vote(self.restoran, client=Client())
+        self.vote(self.restoran, client=Client())
+        item = self.item(self.live(client=voter))
+        self.assertEqual(item["total_votes"], 3)
+        counts = {o["id"]: (o["votes"], o["percent"]) for o in item["options"]}
+        self.assertEqual(counts, {self.sinema.pk: (1, 33), self.restoran.pk: (2, 67)})
+
+    def test_owner_gets_options_without_voting(self):
+        self.vote(self.sinema, client=Client())
+        item = self.item(self.live(client=self.member_client(self.author)))
+        self.assertEqual(item["total_votes"], 1)
+        self.assertEqual(len(item["options"]), 2)
+
+    def test_counts_change_between_requests(self):
+        voter = Client()
+        self.vote(self.sinema, client=voter)
+        self.assertEqual(self.item(self.live(client=voter))["total_votes"], 1)
+        self.vote(self.restoran, client=Client())
+        self.assertEqual(self.item(self.live(client=voter))["total_votes"], 2)
+
+    def test_response_has_no_identity_and_is_not_cacheable(self):
+        self.vote(self.sinema, client=self.member_client())
+        response = self.live(client=self.member_client())
+        body = response.content.decode()
+        for forbidden in ("uye@example.com", "yazar@example.com", "voter_key", "u:", "a:", "username"):
+            self.assertNotIn(forbidden, body)
+        self.assertIn("no-store", response["Cache-Control"])
+
+    def test_invalid_and_extra_ids_are_ignored(self):
+        other = make_poll(self.author, "İkinci anket burada?")
+        response = self.live(ids=f"abc,-1,{other.pk},1e3,,{self.poll.pk}")
+        ids = sorted(item["id"] for item in response.json()["polls"])
+        self.assertEqual(ids, sorted([self.poll.pk, other.pk]))
+        self.assertEqual(self.live(ids="").json(), {"ok": True, "polls": []})
+
+    def test_at_most_twenty_ids_are_read(self):
+        polls = [make_poll(self.author, f"Soru numarası {i} burada?") for i in range(25)]
+        response = self.live(ids=",".join(str(p.pk) for p in polls))
+        self.assertEqual(len(response.json()["polls"]), 20)
+
+    def test_query_count_does_not_depend_on_poll_count(self):
+        def count(ids):
+            with CaptureQueriesContext(connection) as ctx:
+                self.live(ids=ids)
+            return len(ctx)
+
+        one = count(str(self.poll.pk))
+        polls = [make_poll(self.author, f"Soru numarası {i} burada?") for i in range(10)]
+        many = count(",".join(str(p.pk) for p in polls))
+        self.assertEqual(one, many)
+
+    def test_post_is_not_allowed(self):
+        self.assertEqual(self.client.post("/anket/sonuclar/").status_code, 405)
+
+    def test_cards_carry_data_attributes_for_live_updates(self):
+        voter = Client()
+        self.vote(self.sinema, client=voter)
+        html = voter.get("/").content.decode()
+        self.assertIn(f'data-poll-id="{self.poll.pk}"', html)
+        self.assertIn('data-live-url="/anket/sonuclar/"', html)
+        self.assertIn(f'data-option-id="{self.sinema.pk}"', html)
+
+
 class AccountDeletionVoteTests(VoteTestCase):
     def test_votes_survive_account_deletion_but_are_anonymized(self):
         client = self.member_client()

@@ -7,7 +7,8 @@ from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.views.decorators.http import require_POST
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_GET, require_POST
 
 from core import ratelimit
 from core.net import get_client_ip, get_safe_next
@@ -82,6 +83,35 @@ def delete(request, pk):
         return redirect("polls:feed")
     (poll,) = attach_vote_state(request, [poll])
     return render(request, "polls/confirm_delete.html", {"poll": poll})
+
+
+RESULTS_MAX_IDS = 20
+
+
+@require_GET
+@never_cache
+def results(request):
+    """Sayfadaki anketlerin guncel sayilari (canli guncelleme icin).
+
+    Gorunurluk kurali sayfalarla aynidir: toplam oy sayisi herkese, secenek bazli sonuclar yalnizca
+    oy vermis kisiye ve anket sahibine verilir. Kullanici bilgisi, e-posta ve voter_key icermez.
+    """
+    ids = [
+        int(part)
+        for part in request.GET.get("ids", "").split(",")[:RESULTS_MAX_IDS]
+        if OPTION_ID_PATTERN.match(part)
+    ]
+    items = []
+    if ids:
+        for poll in attach_vote_state(request, polls_queryset().filter(pk__in=ids)):
+            item = {"id": poll.pk, "total_votes": poll.total_votes}
+            if poll.show_results:
+                item["options"] = [
+                    {"id": o.pk, "votes": o.vote_count, "percent": o.percent}
+                    for o in poll.options.all()
+                ]
+            items.append(item)
+    return JsonResponse({"ok": True, "polls": items})
 
 
 def _wants_json(request):
