@@ -5,7 +5,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from .models import User, username_validator
+from .models import User, is_reserved_username, username_validator
 
 EMAIL_TAKEN_MESSAGE = "Bu e-posta ile kayıt oluşturulamadı. Zaten hesabın varsa giriş yap."
 LOGIN_ERROR_MESSAGE = "E-posta veya parola hatalı."
@@ -51,6 +51,8 @@ class SignupForm(forms.Form):
 
     def clean_username(self):
         username = self.cleaned_data["username"]
+        if is_reserved_username(username):
+            raise ValidationError("Bu kullanıcı adı kullanılamaz.")
         if User.objects.filter(username__iexact=username).exists():
             raise ValidationError("Bu kullanıcı adı zaten alınmış.")
         return username

@@ -149,7 +149,7 @@ class SettingsSafetyTests(SimpleTestCase):
         self.assertIn("DEBUG=True Vercel", result.stderr)
 
     def test_debug_false_on_vercel_starts_normally(self):
-        result = self._run_settings_import(DEBUG="False", SECRET_KEY="x" * 50, VERCEL="1")
+        result = self._run_settings_import(DEBUG="False", SECRET_KEY="x" * 50, VERCEL="1", ADMIN_URL="yonetim-test/")
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_debug_true_is_still_allowed_locally(self):
@@ -160,7 +160,7 @@ class SettingsSafetyTests(SimpleTestCase):
         result = subprocess.run(
             [sys.executable, "-c", "import config.settings as s; print(s.DEBUG)"],
             cwd=settings.BASE_DIR,
-            env={**os.environ, "DEBUG": "", "SECRET_KEY": "x" * 50, "DJANGO_SETTINGS_MODULE": "config.settings"},
+            env={**os.environ, "DEBUG": "", "SECRET_KEY": "x" * 50, "ADMIN_URL": "yonetim-test/", "DJANGO_SETTINGS_MODULE": "config.settings"},
             capture_output=True,
             text=True,
         )

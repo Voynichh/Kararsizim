@@ -119,6 +119,32 @@ class AdminSwitchTests(SimpleTestCase):
             self.assertNotIn("yonetim-test", out[key])
 
 
+class AdminUrlGuardTests(SimpleTestCase):
+    """Uretimde ADMIN_URL varsayilan 'admin/' kalirsa uygulama baslamaz (panel tahmin edilebilir yolda acilmasin)."""
+
+    def test_default_admin_url_is_refused_in_production(self):
+        result = run(SETTINGS_SCRIPT, ADMIN_URL="admin/")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ADMIN_URL", result.stderr)
+
+    def test_missing_admin_url_is_refused_in_production(self):
+        result = run(SETTINGS_SCRIPT, ADMIN_URL="")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ADMIN_URL", result.stderr)
+
+    def test_default_path_is_fine_when_admin_is_switched_off(self):
+        result = run(SETTINGS_SCRIPT, ADMIN_URL="admin/", ADMIN_ENABLED="False")
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_default_path_is_fine_locally_with_debug(self):
+        result = run(SETTINGS_SCRIPT, ADMIN_URL="admin/", DEBUG="True")
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_unguessable_path_is_accepted(self):
+        result = run(SETTINGS_SCRIPT, ADMIN_URL="yonetim-abc123/")
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+
 class ProductionSettingsTests(SimpleTestCase):
     def test_production_only_security_settings_are_enabled(self):
         result = run(SETTINGS_SCRIPT)

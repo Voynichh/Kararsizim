@@ -46,11 +46,18 @@ if not DEBUG and not ALLOWED_HOSTS:
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
 # Admin yolu: basinda "/" olmaz, sonunda "/" olur.
-ADMIN_URL = os.environ.get("ADMIN_URL", "admin/").strip().strip("/") + "/"
+# Bos ya da tanimsiz deger varsayilana (admin/) duser; asagidaki uretim korumasi bunu reddeder.
+ADMIN_URL = (os.environ.get("ADMIN_URL", "").strip().strip("/") or "admin") + "/"
 
 # Admin paneli (yolu ADMIN_URL). Varsayilan acik; ADMIN_ENABLED=False verilirse yol hic kayitli olmaz
 # ve her sey temali 404 doner (panel bir sure kullanilmayacaksa saldiri yuzeyini sifirlar).
 ADMIN_ENABLED = env_bool("ADMIN_ENABLED", True)
+if not DEBUG and ADMIN_ENABLED and ADMIN_URL == "admin/":
+    # ADMIN_URL env'i unutulursa panel tahmin edilebilir /admin/ yolunda acilirdi; acikca basarisiz ol.
+    raise ImproperlyConfigured(
+        "Üretimde ADMIN_URL tahmin edilemez olmalı (varsayılan 'admin/' kullanılamaz); "
+        "paneli kapatmak için ADMIN_ENABLED=False ver."
+    )
 
 # Bakim modu: True iken tum sayfalar 503 "Bakimdayiz" doner (yalnizca admin yolu ve /static/ acik kalir).
 # Vercel'de MAINTENANCE_MODE=True + Redeploy ile acilir, kaldirilip Redeploy ile kapatilir.

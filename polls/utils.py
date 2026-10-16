@@ -96,6 +96,20 @@ def percent_of(votes, total):
     return (votes * 200 + total) // (2 * total)
 
 
+def distribute_percentages(counts):
+    """En buyuk kalan yontemiyle tam sayi yuzdeler: toplam oy varsa toplam her zaman tam 100'dur
+    (ornegin 1/1/1 oy -> 34/33/33, 99 degil). Oy yoksa hepsi 0."""
+    total = sum(counts)
+    if not total:
+        return [0] * len(counts)
+    floors = [count * 100 // total for count in counts]
+    remainders = [count * 100 % total for count in counts]
+    order = sorted(range(len(counts)), key=lambda i: (-remainders[i], -counts[i], i))
+    for i in order[: 100 - sum(floors)]:
+        floors[i] += 1
+    return floors
+
+
 def attach_vote_state(request, polls):
     """Her ankete gosterim durumunu ekler. Oy verilmis olanlari tek sorguda alir (N+1 yok).
 
@@ -123,8 +137,9 @@ def attach_vote_state(request, polls):
 def annotate_results(poll, selected_option_id):
     options = list(poll.options.all())
     top = max((o.vote_count for o in options), default=0)
-    for option in options:
-        option.percent = percent_of(option.vote_count, poll.total_votes)
+    percents = distribute_percentages([option.vote_count for option in options])
+    for option, percent in zip(options, percents):
+        option.percent = percent
         option.is_top = top > 0 and option.vote_count == top
         option.is_mine = option.pk == selected_option_id
 

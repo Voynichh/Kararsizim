@@ -8,7 +8,7 @@ from django.test import Client, TestCase
 from django.test.utils import CaptureQueriesContext
 
 from .models import Option, Poll, Vote
-from .utils import COOKIE_NAME, COOKIE_SALT, percent_of
+from .utils import COOKIE_NAME, COOKIE_SALT, distribute_percentages, percent_of
 
 User = get_user_model()
 
@@ -561,6 +561,46 @@ class FeedLiveUpdateTests(VoteTestCase):
         self.assertIn("data-feed-live", html)
         self.assertIn("data-empty-state", html)
         self.assertIn("Henüz kimse kararsız değil.", html)
+
+
+class PercentageDistributionTests(VoteTestCase):
+    def test_known_cases_always_sum_to_100(self):
+        self.assertEqual(distribute_percentages([1, 1, 1]), [34, 33, 33])
+        self.assertEqual(distribute_percentages([2, 1]), [67, 33])
+        self.assertEqual(distribute_percentages([1, 1]), [50, 50])
+        self.assertEqual(distribute_percentages([1, 0]), [100, 0])
+        self.assertEqual(distribute_percentages([0, 0, 0]), [0, 0, 0])
+        self.assertEqual(distribute_percentages([5]), [100])
+        self.assertEqual(distribute_percentages([1, 1, 1, 1, 1, 1]), [17, 17, 17, 17, 16, 16])
+
+    def test_sum_is_100_for_every_small_combination(self):
+        for a in range(0, 9):
+            for b in range(0, 9):
+                for c in range(0, 9):
+                    counts = [a, b, c]
+                    result = distribute_percentages(counts)
+                    if sum(counts):
+                        self.assertEqual(sum(result), 100, counts)
+                    else:
+                        self.assertEqual(result, [0, 0, 0])
+                    # Daha fazla oy alan secenegin yuzdesi hicbir zaman daha dusuk olmaz.
+                    for i in range(3):
+                        for j in range(3):
+                            if counts[i] > counts[j]:
+                                self.assertGreaterEqual(result[i], result[j], counts)
+                    # Her yuzde gercek orandan en fazla 1 puan sapar.
+                    for count, percent in zip(counts, result):
+                        if sum(counts):
+                            self.assertLess(abs(percent - count * 100 / sum(counts)), 1, counts)
+
+    def test_page_and_json_show_percentages_summing_to_100(self):
+        poll = make_poll(self.author, "Üç seçenekli anket burada?", options=("A", "B", "C"))
+        for option in poll.options.all():
+            self.vote(option, poll=poll, client=Client())
+        voter = Client()
+        self.vote(poll.options.first(), poll=poll, client=voter)
+        data = voter.get(f"/anket/sonuclar/?ids={poll.pk}").json()["polls"][0]
+        self.assertEqual(sum(o["percent"] for o in data["options"]), 100)
 
 
 class AccountDeletionVoteTests(VoteTestCase):

@@ -9,10 +9,10 @@
 
   <h2>Hangi verileri topluyoruz, neden?</h2>
   <ul>
-    <li><strong>E-posta adresi:</strong> Giriş yapabilmen için. Başka hiçbir kullanıcıya gösterilmez; yalnızca hesap sayfanda sen görürsün.</li>
+    <li><strong>E-posta adresi:</strong> Giriş yapabilmen için. Başka hiçbir kullanıcıya gösterilmez; yalnızca hesap sayfanda sen görürsün. Site yöneticisi, hesapları yönetebilmek için e-posta adresini görebilir.</li>
     <li><strong>Kullanıcı adı:</strong> Açtığın anketlerde görünür. Herkese açıktır.</li>
     <li><strong>Parola:</strong> Düz metin olarak saklanmaz; geri döndürülemeyen güçlü bir yöntemle (Argon2) şifrelenir.</li>
-    <li><strong>Anketlerin ve oyların:</strong> Açtığın anketler ve verdiğin oylar. Kimin hangi seçeneğe oy verdiği hiçbir kullanıcıya, anketin sahibine bile gösterilmez; yalnızca toplam sonuçlar görünür.</li>
+    <li><strong>Anketlerin ve oyların:</strong> Açtığın anketler ve verdiğin oylar. Kimin hangi seçeneğe oy verdiği hiçbir kullanıcıya, anketin sahibine bile gösterilmez; yalnızca toplam sonuçlar görünür. Üye olarak verdiğin oy, aynı ankete ikinci kez oy vermeni engellemek için veritabanında hesabınla eşleşik tutulur; bu eşleşme hiçbir kullanıcıya gösterilmez, yalnızca veritabanına doğrudan erişimi olan site yöneticisi teknik olarak görebilir.</li>
     <li><strong>Hesap tarihleri:</strong> Kayıt tarihin ve son giriş zamanın.</li>
   </ul>
   <p>Başka veri toplamıyoruz: reklam, analiz ya da üçüncü taraf takip kodu yok.</p>
@@ -26,7 +26,7 @@
   </ul>
 
   <h2>IP adresi</h2>
-  <p>IP adresin, kötüye kullanımı (ör. parola deneme saldırıları ve spam) yavaşlatmak için kısa süreli sayaçlarda kullanılır. Bu sayaçlarda IP adresin olduğu gibi değil, geri çevrilemez bir özet olarak bulunur ve süre dolunca kendiliğinden silinir. IP adresin kalıcı olarak saklanmaz.</p>
+  <p>IP adresin, kötüye kullanımı (ör. parola deneme saldırıları ve spam) yavaşlatmak için kısa süreli sayaçlarda kullanılır. Bu sayaçlarda IP adresin olduğu gibi değil, geri çevrilemez bir özet olarak bulunur ve süre dolunca kendiliğinden silinir. IP adresin uygulamanın veritabanında kalıcı olarak saklanmaz. Barındırma hizmeti (Vercel) ise hizmeti işletmek ve güvenliği sağlamak için kendi altyapısında istek kayıtları (IP adresi dahil) tutabilir; bu kayıtlar bizim kontrolümüzde değildir ve Vercel'in saklama süresine tabidir.</p>
 
   <h2>Verilerin nerede tutulduğu</h2>
   <p>Veriler Supabase üzerindeki bir PostgreSQL veritabanında tutulur; uygulama Vercel üzerinde çalışır.</p>

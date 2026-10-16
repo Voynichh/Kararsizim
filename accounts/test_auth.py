@@ -116,6 +116,33 @@ class SignupTests(AuthTestCase):
         self.assertEqual(User.objects.count(), 0)
 
 
+class ReservedUsernameTests(AuthTestCase):
+    def test_staff_like_usernames_are_rejected_at_signup(self):
+        for name in ("admin", "Admin", "ADMIN_", "adm1n", "a_d_m_i_n", "yonetici", "Yonetim_Ekibi",
+                     "kararsizim", "kararsizim_destek", "moderator", "root", "Anonim", "support_ali", "0fficial"):
+            with self.subTest(name=name):
+                cache.clear()
+                response = self.client.post("/kayit/", self.signup_data(username=name))
+                self.assertContains(response, "Bu kullanıcı adı kullanılamaz.")
+                self.assertFalse(User.objects.filter(username__iexact=name).exists())
+
+    def test_ordinary_usernames_are_accepted(self):
+        for index, name in enumerate(("ali", "ayse_k", "mehmet99", "zeynep_t", "kedi_sever")):
+            with self.subTest(name=name):
+                cache.clear()
+                client = Client()
+                response = client.post(
+                    "/kayit/", self.signup_data(username=name, email=f"kisi{index}@example.com")
+                )
+                self.assertRedirects(response, "/")
+                self.assertTrue(User.objects.filter(username=name).exists())
+
+    def test_staff_can_still_create_such_accounts_outside_the_signup_form(self):
+        # createsuperuser / yonetici islemleri etkilenmez; kural yalnizca kayit formundadir.
+        User.objects.create_superuser("yonetici@example.com", "admin", PASSWORD)
+        self.assertTrue(User.objects.filter(username="admin", is_superuser=True).exists())
+
+
 class LoginTests(AuthTestCase):
     def login(self, email="ali@example.com", password=PASSWORD, **extra):
         return self.client.post("/giris/", {"email": email, "password": password, **extra})
@@ -274,6 +301,13 @@ class HeaderAndPrivacyTests(AuthTestCase):
         for path in ("/hesap/", "/hesap/parola/", "/hesap/sil/"):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 302)
+
+    def test_privacy_page_discloses_admin_access_vote_link_and_host_logs(self):
+        html = self.client.get("/gizlilik/").content.decode()
+        self.assertIn("Site yöneticisi, hesapları yönetebilmek için e-posta adresini görebilir", html)
+        self.assertIn("veritabanında hesabınla eşleşik tutulur", html)
+        self.assertIn("Barındırma hizmeti (Vercel)", html)
+        self.assertIn("istek kayıtları (IP adresi dahil)", html)
 
     def test_privacy_page_is_public_and_explains_data(self):
         response = self.client.get("/gizlilik/")

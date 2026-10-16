@@ -9,6 +9,21 @@ username_validator = RegexValidator(
 )
 
 
+# Kayit sirasinda alinamayan, yonetici/resmi hesap gibi gorunen adlar (taklit onlemi). Karsilastirma
+# kucuk harfle, alt cizgiler atilarak ve basit rakam-harf benzetmeleri (adm1n -> admin) cozerek yapilir.
+RESERVED_USERNAMES_EXACT = frozenset(
+    {"root", "system", "sistem", "staff", "ekip", "mod", "owner", "sahip", "bot", "anonim", "anonymous",
+     "null", "none", "undefined", "kararsiz"}
+)
+RESERVED_USERNAME_PARTS = ("admin", "yonetici", "yonetim", "moderator", "kararsizim", "destek", "support", "official")
+_LOOKALIKES = str.maketrans({"0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t"})
+
+
+def is_reserved_username(username):
+    folded = (username or "").lower().replace("_", "").translate(_LOOKALIKES)
+    return folded in RESERVED_USERNAMES_EXACT or any(part in folded for part in RESERVED_USERNAME_PARTS)
+
+
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
