@@ -85,9 +85,9 @@ python manage.py createsuperuser  # e-posta + kullanıcı adı + güçlü ve ben
   curl -sI http://kararsizim.vercel.app/ | head -n 5
   curl -sI https://kararsizim.vercel.app/ | grep -i -E "strict-transport|content-security|x-frame"
   ```
-- [ ] `/admin/` **404** veriyor. Admin paneli üretimde **varsayılan kapalıdır** (`ADMIN_ENABLED` tanımsız = yol hiç yok, her şey 404).
+- [ ] `/admin/` **404** veriyor; admin yalnızca `ADMIN_URL` yolunda açılıyor. (`ADMIN_ENABLED=False` verilirse panel tamamen kapanır, her yol 404.)
 
-### Günlük yönetim (admin paneli kapalıyken)
+### Panel olmadan yönetim (isteğe bağlı)
 
 Parola sıfırlama ve hesap işleri için web paneli gerekmez; yerelden komutla yapılır (`.env` Session pooler adresini içerir, yani **canlı veritabanına** yazar):
 
@@ -96,7 +96,7 @@ python manage.py changepassword kullanici@ornek.com   # e-posta ile; yeni parola
 python manage.py shell                                  # örn. User.objects.get(username="x").delete()
 ```
 
-Web paneli gerçekten lazım olursa: Vercel'de `ADMIN_ENABLED=True` (Production, Sensitive) ekle → Redeploy → işi bitince değişkeni sil → Redeploy. Panel yolu `ADMIN_URL`'dir. Açık kaldığı sürece giriş sayfası hız sınırlıdır ama yol Vercel loglarında düz yazı görünür.
+Panel varsayılan olarak açıktır (`ADMIN_URL` yolunda). Bir süre kullanılmayacaksa Vercel'de `ADMIN_ENABLED=False` (Production) + Redeploy ile tamamen kapatılabilir. Açıkken giriş sayfası hız sınırlıdır ama yol Vercel loglarında düz yazı görünür.
 - [ ] Statik dosya yanıtlarında (F12 → Network → `main.css` → Headers) `cache-control: public, max-age=0, must-revalidate` ve `x-content-type-options: nosniff` var. (Vercel'in çalışma ortamında `collectstatic` manifesti olmadığı için dosya adları hash'siz gelir; bu beklenen davranıştır, `immutable` bilerek verilmez.) Arama motorları kapalı: `…/robots.txt` içinde `Disallow: /` yazıyor.
 - [ ] Anket detay sayfasında "Linki kopyala" düğmesi çalışıyor; yapıştırınca `…/anket/<id>/` (sorgu dizisiz) adresi çıkıyor.
 - [ ] Rastgele bir adres (`/yok/`) Django debug ekranı değil, yalnızca "Aradığın sayfayı bulamadık." diyen temalı 404 gösteriyor (adres listesi, `admin/`, ayar veya hata detayı görünmemeli). Vercel'de `DEBUG` yanlışlıkla `True` kalırsa uygulama zaten başlamaz (`DEBUG=True Vercel'de kullanılamaz` hatası; Vercel → Deployments → build/runtime loglarında görünür).

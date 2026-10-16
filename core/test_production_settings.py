@@ -96,34 +96,27 @@ print(json.dumps(out))
 
 
 class AdminSwitchTests(SimpleTestCase):
-    """Admin paneli uretimde varsayilan KAPALI: yol hic kayitli degildir, her sey temali 404 verir."""
+    """Admin paneli varsayilan acik (gizli ADMIN_URL yolunda); ADMIN_ENABLED=False ile yol hic kayitli olmaz."""
 
     def load(self, **env):
         result = run(ADMIN_SCRIPT, **env)
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout.strip().splitlines()[-1])
 
-    def test_admin_is_off_by_default_in_production(self):
+    def test_admin_is_on_by_default_only_at_the_secret_path(self):
         out = self.load()
+        self.assertTrue(out["enabled"])
+        self.assertEqual(out["root"], 302)  # giris sayfasina yonlenir
+        self.assertEqual(out["login"], 200)
+        self.assertEqual(out["default"], 404)  # varsayilan /admin/ yok
+
+    def test_admin_can_be_switched_off(self):
+        out = self.load(ADMIN_ENABLED="False")
         self.assertFalse(out["enabled"])
         self.assertEqual((out["root"], out["login"], out["default"]), (404, 404, 404))
         for key in ("root_body", "login_body"):
             self.assertIn("aradığın sayfayı bulamadık", out[key])
             self.assertNotIn("yonetim-test", out[key])
-
-    def test_admin_can_be_enabled_explicitly(self):
-        out = self.load(ADMIN_ENABLED="True")
-        self.assertTrue(out["enabled"])
-        self.assertEqual(out["root"], 302)  # giris sayfasina yonlenir
-        self.assertEqual(out["login"], 200)
-        self.assertEqual(out["default"], 404)  # varsayilan /admin/ yine yok
-
-    def test_admin_enabled_flag_false_stays_off(self):
-        self.assertFalse(self.load(ADMIN_ENABLED="False")["enabled"])
-
-    def test_admin_defaults_on_locally_with_debug(self):
-        # Testler DEBUG=True ile calisir; yerelde panel varsayilan acik kalir.
-        self.assertTrue(settings.ADMIN_ENABLED)
 
 
 class ProductionSettingsTests(SimpleTestCase):

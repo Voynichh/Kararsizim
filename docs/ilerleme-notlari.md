@@ -28,7 +28,7 @@ Uygulama (Faz 0–5) kodlanmış, testli ve **canlıda çalışıyor**. Site **h
 
 - **E-posta altyapısı şimdilik YOK:** alan adı ve e-posta hesabı istenmiyor. Kapalı akraba testi için: **yönetici destekli parola sıfırlama** (süper kullanıcı admin panelinden geçici parola). Gerçek e-posta doğrulama + parola sıfırlama, halka açılışta (alan adı + e-posta sağlayıcısı alınınca) eklenecek. Doğrulanmamış kullanıcı: giriş yapar, **anket açamaz** (karar verildi, henüz kodlanmadı).
 - **Uçtan uca şifreleme anlamlı değil** (sunucu içeriği okumalı); aktarım TLS + Supabase SSL var. Parolalar Argon2.
-- Süper kullanıcı oluşturuldu. **Web admin paneli üretimde kapalı** (`ADMIN_ENABLED` tanımsız): parola sıfırlama yerelden `python manage.py changepassword <e-posta>` ile (canlı DB'ye yazar); panel gerekirse `ADMIN_ENABLED=True` + Redeploy, iş bitince kaldır (bkz. `DEPLOY.md`).
+- Süper kullanıcı oluşturuldu. Web admin paneli **açık** (gizli `ADMIN_URL` yolunda, varsayılan). İsteğe bağlı kapatma: Vercel'de `ADMIN_ENABLED=False` + Redeploy. Panel olmadan parola sıfırlama: yerelden `python manage.py changepassword <e-posta>` (canlı DB'ye yazar). Vercel'de eskiden eklenen `ADMIN_ENABLED=True` değişkeni artık gereksiz (zararsız, silinebilir).
 - Vercel çalışma ortamında `collectstatic` manifesti **yok**: statik dosya adları canlıda hash'siz, bu yüzden `vercel.json` `immutable` vermez (`must-revalidate`).
 
 ## Bekleyen / sıradaki işler (öncelik sırasıyla)
