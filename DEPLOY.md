@@ -67,7 +67,6 @@ python manage.py createsuperuser  # e-posta + kullanıcı adı + güçlü ve ben
    | `DATABASE_URL` | **Transaction pooler** adresi (port `6543`) |
    | `ADMIN_URL` | Tahmin edilemez: `python -c "import secrets; print('yonetim-' + secrets.token_urlsafe(12) + '/')"` |
    | `TRUST_PROXY_IP_HEADER` | `True` |
-   | `SIGNUP_INVITE_CODE` | Kapalı test için kayıt davet kodu (en az 12 karakter): `python -c "import secrets; print(secrets.token_urlsafe(12))"`. Boşsa kayıt herkese açıktır; **Vercel korumasını gevşetmeden önce mutlaka tanımla**, sonra *Redeploy* yap. |
 
    **Preview** ortamı: hiçbir değişken **verme**. Uygulama Vercel'de `DATABASE_URL` yoksa bilerek başlamayı reddeder (SQLite'a düşmez), yani preview deployment'lar derlenemez/çalışmaz; bu istenen davranıştır (preview'lar production veritabanına asla bağlanmamalı ve içerik sunmamalı). Yalnızca `master` dalına push edildiği sürece zaten preview oluşmaz.
 

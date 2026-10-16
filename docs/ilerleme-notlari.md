@@ -4,7 +4,7 @@ Son güncelleme: **2026-10-16**. Yeni bir oturumda önce `CLAUDE.md`'yi, sonra b
 
 ## Özet
 
-Uygulama (Faz 0–5) kodlanmış, testli ve **canlıda çalışıyor**. Şu an **yalnızca sana özel kapalı canlı** aşamasındayız: Vercel Authentication açık, yani siteye yalnızca Vercel hesabıyla girilir. Sıradaki iş **akrabalarla kapalı test** için hazırlık (davet kodu, süper kullanıcı, korumayı gevşetme).
+Uygulama (Faz 0–5) kodlanmış, testli ve **canlıda çalışıyor**. Şu an **yalnızca sana özel kapalı canlı** aşamasındayız: Vercel Authentication açık, yani siteye yalnızca Vercel hesabıyla girilir. Sıradaki iş **akrabalarla kapalı test** için hazırlık (süper kullanıcı, korumayı gevşetme).
 
 | | |
 |---|---|
@@ -26,7 +26,7 @@ Uygulama (Faz 0–5) kodlanmış, testli ve **canlıda çalışıyor**. Şu an *
 
 ## Alınan kararlar
 
-- **E-posta altyapısı şimdilik YOK:** alan adı ve e-posta hesabı istenmiyor. Kapalı akraba testi için: **davet kodu** (yabancı kaydı engellemek), **yönetici destekli parola sıfırlama** (süper kullanıcı admin panelinden geçici parola). Gerçek e-posta doğrulama + parola sıfırlama, halka açılışta (alan adı + e-posta sağlayıcısı alınınca) eklenecek. Doğrulanmamış kullanıcı: giriş yapar, **anket açamaz** (karar verildi, henüz kodlanmadı).
+- **E-posta altyapısı şimdilik YOK:** alan adı ve e-posta hesabı istenmiyor. Kapalı akraba testi için: **yönetici destekli parola sıfırlama** (süper kullanıcı admin panelinden geçici parola). Gerçek e-posta doğrulama + parola sıfırlama, halka açılışta (alan adı + e-posta sağlayıcısı alınınca) eklenecek. Doğrulanmamış kullanıcı: giriş yapar, **anket açamaz** (karar verildi, henüz kodlanmadı).
 - **Uçtan uca şifreleme anlamlı değil** (sunucu içeriği okumalı); aktarım TLS + Supabase SSL var. Parolalar Argon2.
 - Süper kullanıcı **henüz oluşturulmadı** (parola istediği için kullanıcı kendisi `createsuperuser` çalıştırır).
 - Vercel çalışma ortamında `collectstatic` manifesti **yok**: statik dosya adları canlıda hash'siz, bu yüzden `vercel.json` `immutable` vermez (`must-revalidate`).
@@ -34,9 +34,9 @@ Uygulama (Faz 0–5) kodlanmış, testli ve **canlıda çalışıyor**. Şu an *
 ## Bekleyen / sıradaki işler (öncelik sırasıyla)
 
 1. ~~Önbellek başlığı teyidi~~ — tamam (2026-10-16): `main.css` `must-revalidate` görünüyor; Supabase 14/14 tabloda RLS aktif.
-2. **Davet kodu** — KODLANDI (yerelde, commit bekliyor; 261 test geçiyor). `SIGNUP_INVITE_CODE` boşsa kayıt açık ve alan gizli; doluysa (≥12 karakter, aksi halde uygulama başlamaz) kayıt formunda zorunlu. Kalan: kodu üret, Vercel'e (Production, Sensitive) ekle, **Redeploy**, canlıda dene. Sırası: commit/push → değişken → Redeploy.
+2. ~~Davet kodu~~ — denendi ve **kaldırıldı** (2026-10-16): hesap yalnızca anket açmak için gerekiyor, oy vermek/bakmak üyelik istemiyor; arkadaş çevresi için kayıt kapısı gereksiz sürtünme bulundu. Vercel'de `SIGNUP_INVITE_CODE` değişkeni kullanıcı tarafından silinecek (kod artık okumuyor, kalması zararsız).
 3. **Süper kullanıcı** oluşturma (güçlü, benzersiz parola) ve parola sıfırlama akışının dokümante edilmesi.
-4. **Vercel korumasını gevşetme** (Settings → Deployment Protection): akrabalar Vercel hesabı olmadan girsin; bu andan itibaren adres herkese açık olur, bu yüzden davet kodundan **sonra**.
+4. **Vercel korumasını gevşetme** (Settings → Deployment Protection): akrabalar Vercel hesabı olmadan girsin; bu andan itibaren adres herkese açık olur.
 5. Canlıda **hız sınırı denemesi** (6 hatalı girişte 429) ve kontrol tablosundaki ⏳ maddelerinin kapatılması.
 6. Kullanıcı teyitleri: GitHub'da **Dependabot** etkin mi; (isteğe bağlı) Supabase'de **SSL zorlaması**.
 7. **Halka açılıştan önce:** alan adı + e-posta sağlayıcısı, e-posta doğrulama, parola sıfırlama, gizlilik metninin KVKK incelemesi, `ALLOW_SEARCH_INDEXING` kararı. İsteğe bağlı: manifestsiz `?v=<özet>` cache-busting depolaması.
