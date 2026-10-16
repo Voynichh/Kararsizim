@@ -4,7 +4,7 @@ Son güncelleme: **2026-10-16**. Yeni bir oturumda önce `CLAUDE.md`'yi, sonra b
 
 ## Özet
 
-Uygulama (Faz 0–5) kodlanmış, testli ve **canlıda çalışıyor**. Şu an **yalnızca sana özel kapalı canlı** aşamasındayız: Vercel Authentication açık, yani siteye yalnızca Vercel hesabıyla girilir. Sıradaki iş **akrabalarla kapalı test** için hazırlık (süper kullanıcı, korumayı gevşetme).
+Uygulama (Faz 0–5) kodlanmış, testli ve **canlıda çalışıyor**. Site **herkese açık canlı** (arkadaş testi): Vercel koruması yalnızca preview'larda, davet kodu yok, noindex açık. Sıradaki iş **akrabalarla kapalı test** için hazırlık (süper kullanıcı, korumayı gevşetme).
 
 | | |
 |---|---|
@@ -36,7 +36,7 @@ Uygulama (Faz 0–5) kodlanmış, testli ve **canlıda çalışıyor**. Şu an *
 1. ~~Önbellek başlığı teyidi~~ — tamam (2026-10-16): `main.css` `must-revalidate` görünüyor; Supabase 14/14 tabloda RLS aktif.
 2. ~~Davet kodu~~ — denendi ve **kaldırıldı** (2026-10-16): hesap yalnızca anket açmak için gerekiyor, oy vermek/bakmak üyelik istemiyor; arkadaş çevresi için kayıt kapısı gereksiz sürtünme bulundu. Vercel'de `SIGNUP_INVITE_CODE` değişkeni kullanıcı tarafından silinecek (kod artık okumuyor, kalması zararsız).
 3. **Süper kullanıcı** oluşturma (güçlü, benzersiz parola) ve parola sıfırlama akışının dokümante edilmesi.
-4. **Vercel korumasını gevşetme** (Settings → Deployment Protection): akrabalar Vercel hesabı olmadan girsin; bu andan itibaren adres herkese açık olur.
+4. ~~Vercel korumasını gevşetme~~ — YAPILDI (2026-10-16): `ssoProtection` = `preview` (yalnızca preview'lar korumalı). Site herkese açık; `curl` ile doğrulandı (/, /kayit/ 200; /admin/ ve bilinmeyen yol 404; HSTS/CSP/nosniff/noindex başlıkları var; CSRF'siz POST 403; HTTP→HTTPS 308; geçici deploy adresleri 400). Kayıt hız sınırı IP başına 20/saat.
 5. Canlıda **hız sınırı denemesi** (6 hatalı girişte 429) ve kontrol tablosundaki ⏳ maddelerinin kapatılması.
 6. Kullanıcı teyitleri: GitHub'da **Dependabot** etkin mi; (isteğe bağlı) Supabase'de **SSL zorlaması**.
 7. **Halka açılıştan önce:** alan adı + e-posta sağlayıcısı, e-posta doğrulama, parola sıfırlama, gizlilik metninin KVKK incelemesi, `ALLOW_SEARCH_INDEXING` kararı. İsteğe bağlı: manifestsiz `?v=<özet>` cache-busting depolaması.
