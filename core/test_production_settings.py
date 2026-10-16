@@ -74,6 +74,58 @@ def run(code, **env):
     )
 
 
+ADMIN_SCRIPT = r"""
+import json, os, sys
+sys.path.insert(0, os.getcwd())
+os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings"
+import django
+django.setup()
+from django.conf import settings
+from django.test import Client
+from django.test.utils import setup_test_environment
+setup_test_environment()
+
+c = Client()
+out = {"enabled": settings.ADMIN_ENABLED}
+for name, path in (("root", "/yonetim-test/"), ("login", "/yonetim-test/login/"), ("default", "/admin/")):
+    r = c.get(path, secure=True)
+    out[name] = r.status_code
+    out[name + "_body"] = r.content.decode().lower()
+print(json.dumps(out))
+"""
+
+
+class AdminSwitchTests(SimpleTestCase):
+    """Admin paneli uretimde varsayilan KAPALI: yol hic kayitli degildir, her sey temali 404 verir."""
+
+    def load(self, **env):
+        result = run(ADMIN_SCRIPT, **env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout.strip().splitlines()[-1])
+
+    def test_admin_is_off_by_default_in_production(self):
+        out = self.load()
+        self.assertFalse(out["enabled"])
+        self.assertEqual((out["root"], out["login"], out["default"]), (404, 404, 404))
+        for key in ("root_body", "login_body"):
+            self.assertIn("aradığın sayfayı bulamadık", out[key])
+            self.assertNotIn("yonetim-test", out[key])
+
+    def test_admin_can_be_enabled_explicitly(self):
+        out = self.load(ADMIN_ENABLED="True")
+        self.assertTrue(out["enabled"])
+        self.assertEqual(out["root"], 302)  # giris sayfasina yonlenir
+        self.assertEqual(out["login"], 200)
+        self.assertEqual(out["default"], 404)  # varsayilan /admin/ yine yok
+
+    def test_admin_enabled_flag_false_stays_off(self):
+        self.assertFalse(self.load(ADMIN_ENABLED="False")["enabled"])
+
+    def test_admin_defaults_on_locally_with_debug(self):
+        # Testler DEBUG=True ile calisir; yerelde panel varsayilan acik kalir.
+        self.assertTrue(settings.ADMIN_ENABLED)
+
+
 class ProductionSettingsTests(SimpleTestCase):
     def test_production_only_security_settings_are_enabled(self):
         result = run(SETTINGS_SCRIPT)

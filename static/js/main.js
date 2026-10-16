@@ -208,12 +208,17 @@
   // Canlı güncelleme: sayfadaki anketlerin sayıları birkaç saniyede bir yenilenir (F5 gerekmez).
   // Seçenek bazlı sonuçları sunucu yalnızca oy vermiş kişiye ve anket sahibine gönderir.
   function updateCard(card, data) {
+    var changed = false;
     var total = card.querySelector("[data-total-votes]");
     if (total && typeof data.total_votes === "number") {
-      total.textContent = data.total_votes + " oy";
+      var totalText = data.total_votes + " oy";
+      if (total.textContent !== totalText) {
+        total.textContent = totalText;
+        changed = true;
+      }
     }
     if (!data.options || !card.querySelector("[data-results]")) {
-      return;
+      return changed;
     }
     var maxVotes = data.options.reduce(function (max, option) {
       return Math.max(max, option.votes);
@@ -226,14 +231,17 @@
       item.setAttribute("data-percent", String(option.percent));
       item.classList.toggle("result--top", maxVotes > 0 && option.votes === maxVotes);
       var stat = item.querySelector(".result__stat");
-      if (stat) {
-        stat.textContent = "%" + option.percent + " · " + option.votes + " oy";
+      var statText = "%" + option.percent + " · " + option.votes + " oy";
+      if (stat && stat.textContent !== statText) {
+        stat.textContent = statText;
+        changed = true;
       }
       var bar = item.querySelector(".result__bar");
       if (bar) {
         bar.style.width = option.percent + "%";
       }
     });
+    return changed;
   }
 
   // Silinen anketin kartı kaldırılır (detay sayfasında kısa bir bilgi gösterilir).
@@ -261,9 +269,15 @@
     var url = source.getAttribute("data-live-url");
     var feed = document.querySelector(".feed[data-feed-live]");
     var cardsUrl = feed ? feed.getAttribute("data-cards-url") : null;
-    var BASE_DELAY = 5000;
+    // Sunucu çağrısı (Vercel kotası) tasarrufu: 10 sn ile başlar, değişiklik yoksa 30 sn'ye kadar
+    // seyrekleşir, hata olursa 60 sn'ye kadar uzar; 2 dakika etkileşim olmazsa tamamen durur.
+    var BASE_DELAY = 10000;
+    var QUIET_MAX_DELAY = 30000;
     var MAX_DELAY = 60000;
+    var IDLE_AFTER = 120000;
     var delay = BASE_DELAY;
+    var lastActivity = Date.now();
+    var stopped = false;
     var timer = null;
     var busy = false;
     var seenMax = 0; // bilinen en büyük anket id'si (daha büyükler "yeni" sayılır)
@@ -278,6 +292,20 @@
       return max;
     }
     seenMax = domMaxId();
+
+    // Kullanıcı etkileşimi: durmuşsa yoklama hemen yeniden başlar.
+    function noteActivity() {
+      lastActivity = Date.now();
+      if (stopped) {
+        stopped = false;
+        delay = BASE_DELAY;
+        window.clearTimeout(timer);
+        tick();
+      }
+    }
+    ["pointerdown", "keydown", "scroll", "touchstart"].forEach(function (name) {
+      window.addEventListener(name, noteActivity, { passive: true });
+    });
 
     function schedule() {
       window.clearTimeout(timer);
@@ -381,6 +409,10 @@
     }
 
     function tick() {
+      if (Date.now() - lastActivity > IDLE_AFTER) {
+        stopped = true; // etkileşim olunca noteActivity() yeniden başlatır
+        return;
+      }
       if (document.hidden || busy) {
         schedule();
         return;
@@ -418,24 +450,30 @@
             throw new Error("live failed");
           }
           var alive = {};
+          var changed = false;
           data.polls.forEach(function (item) {
             alive[String(item.id)] = true;
             // Oy verme sürerken (form meşgulken) o kartın sayıları ezilmez.
             var card = cards[String(item.id)];
             if (card && !card.querySelector(".vote-form--busy")) {
-              updateCard(card, item);
+              if (updateCard(card, item)) {
+                changed = true;
+              }
             }
           });
           // İstenip de dönmeyen anket silinmiştir.
           ids.forEach(function (id) {
             if (!alive[id]) {
               removeCard(cards[id]);
+              changed = true;
             }
           });
           if (feed && data.new_ids && data.new_ids.length) {
             handleNewIds(data.new_ids);
+            changed = true;
           }
-          delay = BASE_DELAY;
+          // Hareket varsa hızlı, yoksa giderek seyrek.
+          delay = changed ? BASE_DELAY : Math.min(Math.round(delay * 1.5), QUIET_MAX_DELAY);
         })
         .catch(function () {
           // Hata olursa seyrekleştir; sayfa yine de çalışır.
@@ -449,6 +487,8 @@
 
     document.addEventListener("visibilitychange", function () {
       if (!document.hidden) {
+        lastActivity = Date.now();
+        stopped = false;
         delay = BASE_DELAY;
         window.clearTimeout(timer);
         tick();

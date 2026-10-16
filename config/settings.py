@@ -48,6 +48,11 @@ CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 # Admin yolu: basinda "/" olmaz, sonunda "/" olur.
 ADMIN_URL = os.environ.get("ADMIN_URL", "admin/").strip().strip("/") + "/"
 
+# Admin paneli: DEBUG=False (production) iken varsayilan KAPALI; yol hic kayitli olmaz, 404 doner.
+# Lazim olunca ADMIN_ENABLED=True verilip yeniden deploy edilir, isi bitince kaldirilir. Yerelde
+# (DEBUG=True) varsayilan acik. Parola sifirlama icin panel gerekmez: `manage.py changepassword`.
+ADMIN_ENABLED = env_bool("ADMIN_ENABLED", DEBUG)
+
 # Yalnizca Vercel'de True: istemci IP'si proxy basligindan okunur (core/net.py).
 TRUST_PROXY_IP_HEADER = env_bool("TRUST_PROXY_IP_HEADER", False)
 

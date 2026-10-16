@@ -4,7 +4,7 @@ Her sey tek islemde calisir ve geri alinir; YEREL SQLite kullanir (gercek verita
 reddeder). Calistirmak icin (Git Bash; bos DATABASE_URL onemli, PowerShell bos degiskeni siler):
 
     DEBUG=False SECRET_KEY="$(python -c 'import secrets;print(secrets.token_urlsafe(50))')" \\
-    ALLOWED_HOSTS="testserver,localhost" DATABASE_URL="" ADMIN_URL="yonetim-denetim99/" \\
+    ALLOWED_HOSTS="testserver,localhost" DATABASE_URL="" ADMIN_URL="yonetim-denetim99/" ADMIN_ENABLED=True \\
     CSRF_TRUSTED_ORIGINS="https://testserver" .venv/Scripts/python.exe tools/prod_audit.py
 
 Cikti her kontrol icin OK/SORUN yazar; sonda "N/N kontrol gecti" ozeti verir.
@@ -208,13 +208,16 @@ def run():
         check(f"bozuk cerez cokertmiyor ({val[:8]!r})", r.status_code == 200 and r2.status_code in (200, 302), f"{r.status_code}/{r2.status_code}")
 
     # 12) Hiz sinirlari (uretim ayariyla)
+    from core.ratelimit import SIGNUP_IP
+
+    SIGNUP_LIMIT = SIGNUP_IP[0]
     cl = Client()
     codes = [https(cl, "post", "/giris/", {"email": f"x{i}@example.com", "password": "yanlis-parola-1"}, REMOTE_ADDR="198.51.100.7").status_code for i in range(12)]
     check("giris IP limiti: 10 hatadan sonra 429", codes[:10] == [200] * 10 and codes[10] == 429, str(codes))
     codes = [https(Client(), "post", "/giris/", {"email": "uye.gizli@example.com", "password": "yanlis-parola-1"}, REMOTE_ADDR=f"203.0.113.{i}").status_code for i in range(7)]
     check("giris e-posta limiti: 5 hatadan sonra 429", codes[:5] == [200] * 5 and codes[5] == 429, str(codes))
-    codes = [https(Client(), "post", "/kayit/", {"email": "q", "username": "x", "password1": "a", "password2": "b"}, REMOTE_ADDR="198.51.100.9").status_code for i in range(7)]
-    check("kayit limiti: 5'ten sonra 429", codes[:5] == [200] * 5 and codes[5] == 429, str(codes))
+    codes = [https(Client(), "post", "/kayit/", {"email": "q", "username": "x", "password1": "a", "password2": "b"}, REMOTE_ADDR="198.51.100.9").status_code for i in range(SIGNUP_LIMIT + 2)]
+    check(f"kayit limiti: {SIGNUP_LIMIT}'den sonra 429", codes[:SIGNUP_LIMIT] == [200] * SIGNUP_LIMIT and codes[SIGNUP_LIMIT] == 429, str(codes))
     codes = [https(Client(), "post", f"/anket/{poll.pk}/oy/", {"option": o2.pk}, REMOTE_ADDR="198.51.100.11").status_code for i in range(32)]
     check("oy limiti: 30'dan sonra 429", 429 in codes and codes.index(429) in (30, 31), str(codes.index(429) if 429 in codes else None))
 

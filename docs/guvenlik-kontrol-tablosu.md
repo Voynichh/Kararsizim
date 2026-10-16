@@ -100,6 +100,7 @@ Testleri çalıştırmak: `python manage.py test` (her zaman yerel SQLite). Canl
 | Preview deployment production veritabanına erişemez | ✅ ✅c | Preview ortamına değişken tanımlı değil; Vercel'de `DATABASE_URL` yoksa uygulama zaten başlamaz (`core/test_production_settings.py`) |
 | Deployment Protection | ✅c | Vercel API: `ssoProtection` açık (özel alan adı yokken production dahil) |
 | `ADMIN_URL` tahmin edilemez, `/admin/` 404 | ✅c | Canlıda `/admin/` 404 (kullanıcı doğruladı) |
+| Admin paneli üretimde varsayılan **kapalı** (`ADMIN_ENABLED`; yol hiç kayıtlı değil, 404); parola sıfırlama `manage.py changepassword` ile yerelden | ✅ | `config/urls.py`; `core/test_production_settings.py::AdminSwitchTests` |
 | Süper kullanıcı parolası güçlü ve benzersiz | ⏳ | Henüz süper kullanıcı oluşturulmadı; oluşturulunca güçlü parola seçilmeli |
 
 ## 10.9 Bağımlılık ve kod hijyeni
