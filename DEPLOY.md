@@ -82,7 +82,7 @@ python manage.py createsuperuser  # e-posta + kullanıcı adı + güçlü ve ben
   curl -sI https://kararsizim.vercel.app/ | grep -i -E "strict-transport|content-security|x-frame"
   ```
 - [ ] `/admin/` **404** veriyor; admin yalnızca `ADMIN_URL` yolunda açılıyor.
-- [ ] Rastgele bir adres (`/yok/`) Django debug ekranı değil, temalı 404 gösteriyor.
+- [ ] Rastgele bir adres (`/yok/`) Django debug ekranı değil, yalnızca "Aradığın sayfayı bulamadık." diyen temalı 404 gösteriyor (adres listesi, `admin/`, ayar veya hata detayı görünmemeli). Vercel'de `DEBUG` yanlışlıkla `True` kalırsa uygulama zaten başlamaz (`DEBUG=True Vercel'de kullanılamaz` hatası; Vercel → Deployments → build/runtime loglarında görünür).
 - [ ] **Data API kapalı:** aşağıdaki istek veri döndürmemeli (hata veya 4xx beklenir):
   ```bash
   curl -s -i "https://<proje-ref>.supabase.co/rest/v1/accounts_user?select=*"

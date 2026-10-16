@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -273,9 +274,9 @@ class DetailTests(PollTestCase):
         response = self.client.get(f"/anket/{poll.pk}/")
         self.assertContains(response, "Hangisi daha iyi?")
         self.assertContains(response, "@ali")
-        content = response.content.decode()
-        self.assertLess(content.index("Çay"), content.index("Kahve"))
-        self.assertLess(content.index("Kahve"), content.index("Su"))
+        # Rastgele CSRF token'indaki metinlerle karismasin diye yalnizca secenek butonlarina bakilir.
+        texts = re.findall(r'option--button"[^>]*>([^<]*)<', response.content.decode())
+        self.assertEqual(texts, ["Çay", "Kahve", "Su"])
 
     def test_missing_poll_is_themed_404(self):
         response = self.client.get("/anket/99999/")

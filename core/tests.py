@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import sys
 
@@ -68,6 +69,41 @@ class PageTests(TestCase):
         self.assertContains(response, "Aradığın sayfayı bulamadık.", status_code=404)
         self.assertContains(response, "css/main.css", status_code=404)
 
+    def test_404_pages_leak_no_internals(self):
+        # DEBUG=False iken (testler ve canli) teknik 404 sayfasi cikmaz: adres kaliplari, admin yolu,
+        # ayarlar veya yigin izi gorunmez.
+        paths = ["/yok-boyle-bir-sayfa/", "/anket/99999/", "/anket/99999/sil/", "/admin-degil/", "/static/yok.css"]
+        for path in paths:
+            with self.subTest(path=path):
+                body = self.client.get(path).content.decode().lower()
+                for forbidden in (
+                    "urlconf", "tried these url patterns", "debug = true", "request method", "request url",
+                    "traceback", "django version", "settings.py", settings.ADMIN_URL.lower().rstrip("/") + "/",
+                ):
+                    self.assertNotIn(forbidden, body, f"{path}: {forbidden}")
+
+    def test_error_pages_do_not_reveal_which_urls_exist(self):
+        # Var olmayan anket ile baskasinin anketini silme denemesi ayni (genel) 404'u verir.
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        owner = User.objects.create_user("o@example.com", "sahip", "uzun-bir-parola-123")
+        other = User.objects.create_user("d@example.com", "diger", "uzun-bir-parola-123")
+        from polls.models import Option, Poll
+
+        poll = Poll.objects.create(author=owner, question="Gizli anket burada?")
+        Option.objects.create(poll=poll, text="A", order=0)
+        self.client.force_login(other)
+        existing = self.client.get(f"/anket/{poll.pk}/sil/")
+        missing = self.client.get("/anket/99999/sil/")
+        self.assertEqual(existing.status_code, 404)
+
+        def without_token(response):
+            # CSRF token'i her istekte degisir; geri kalan icerik birebir ayni olmali.
+            return re.sub(rb'name="csrfmiddlewaretoken" value="[^"]*"', b"", response.content)
+
+        self.assertEqual(without_token(existing), without_token(missing))
+
     def test_admin_served_only_at_admin_url(self):
         response = self.client.get("/" + settings.ADMIN_URL)
         self.assertEqual(response.status_code, 302)
@@ -105,6 +141,20 @@ class SettingsSafetyTests(SimpleTestCase):
         result = self._run_settings_import(DEBUG="False", SECRET_KEY="")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("SECRET_KEY", result.stderr)
+
+    def test_refuses_debug_true_on_vercel(self):
+        # Vercel VERCEL=1 tanimlar; DEBUG=True ile teknik hata sayfalari sizinti yaratirdi.
+        result = self._run_settings_import(DEBUG="True", SECRET_KEY="x" * 50, VERCEL="1")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("DEBUG=True Vercel", result.stderr)
+
+    def test_debug_false_on_vercel_starts_normally(self):
+        result = self._run_settings_import(DEBUG="False", SECRET_KEY="x" * 50, VERCEL="1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_debug_true_is_still_allowed_locally(self):
+        result = self._run_settings_import(DEBUG="True", SECRET_KEY="x" * 50, VERCEL="")
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_debug_defaults_to_false(self):
         result = subprocess.run(

@@ -27,6 +27,11 @@ def env_list(name, default=""):
 # Varsayilan False; yalnizca acikca True verilirse acilir.
 DEBUG = env_bool("DEBUG", False)
 
+# Vercel her ortamda VERCEL=1 tanimlar. DEBUG acik kalirsa teknik 404/500 sayfalari adres kaliplarini,
+# ayarlari ve yigin izlerini herkese gosterir; bu yuzden Vercel'de DEBUG=True ile baslamayi reddet.
+if DEBUG and os.environ.get("VERCEL"):
+    raise ImproperlyConfigured("DEBUG=True Vercel'de kullanılamaz; DEBUG ortam değişkenini False yap.")
+
 SECRET_KEY = os.environ.get("SECRET_KEY", "").strip()
 if not SECRET_KEY:
     if not DEBUG:
