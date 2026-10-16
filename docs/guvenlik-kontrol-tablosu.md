@@ -70,6 +70,7 @@ Testleri çalıştırmak: `python manage.py test` (her zaman yerel SQLite). Canl
 |---|---|---|
 | Yalnızca e-posta, kullanıcı adı, parola özeti, anket, oy, tarihler saklanır; IP kalıcı saklanmaz | ✅ | `accounts/models.py`, `core/ratelimit.py` (yalnızca HMAC özeti, pencere sonunda silinir) |
 | E-posta yalnızca `/hesap/`'ta sahibine görünür (sayfalar, JSON, hata, log) | ✅ | `accounts/test_auth.py::HeaderAndPrivacyTests`; `tools/prod_audit.py` 4 farklı kullanıcı gözüyle tüm sayfaları tarar |
+| Hesap hangi yolla silinirse silinsin (site, admin paneli, toplu silme) oylar kişiyle bağsız kalır (`user=NULL`, `voter_key=d:<uuid>`) | ✅ | `accounts/signals.py` (`pre_delete`); `polls/test_voting.py::AccountDeletionVoteTests` (ORM, queryset ve admin silme testleri) |
 | Kimin neye oy verdiği hiçbir kullanıcıya gösterilmez; JSON'da `voter_key` yok | ✅ | `polls/test_voting.py::VisibilityTests`, `JsonResponseTests`; admin'de de gizli (`AdminVoteTests`) |
 | Çerezler yalnızca zorunlu olanlar (oturum, CSRF, `kv_voter`); izleme/harici istek yok | ✅ | `templates/core/privacy.html`; CSP `default-src 'self'` |
 | `/gizlilik/` sade Türkçe, güncel | ✅ ⚠️ | Hukuki gözden geçirme (KVKK) gerçek kullanıcıya açmadan önce **senin/uzmanın yapacağı** adım |

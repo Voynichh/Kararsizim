@@ -416,6 +416,37 @@ class AccountDeletionVoteTests(VoteTestCase):
         counts = {o.text: o.votes.count() for o in self.poll.options.all()}
         self.assertEqual(counts, {"Sinema": 1, "Restoran": 1})
 
+    def _assert_member_votes_anonymized(self):
+        self.assertFalse(User.objects.filter(pk=self.member.pk).exists())
+        self.assertEqual(Vote.objects.count(), 2)
+        self.assertEqual(Vote.objects.filter(voter_key__startswith="d:").count(), 1)
+        self.assertFalse(Vote.objects.filter(voter_key__startswith="u:").exists())
+        self.assertFalse(Vote.objects.exclude(user=None).exists())
+
+    def _vote_as_member_and_stranger(self):
+        self.vote(self.sinema, client=self.member_client())
+        self.vote(self.restoran, client=Client())
+
+    def test_orm_delete_anonymizes_votes(self):
+        self._vote_as_member_and_stranger()
+        self.member.delete()
+        self._assert_member_votes_anonymized()
+
+    def test_queryset_delete_anonymizes_votes(self):
+        self._vote_as_member_and_stranger()
+        User.objects.filter(pk=self.member.pk).delete()
+        self._assert_member_votes_anonymized()
+
+    def test_admin_delete_anonymizes_votes(self):
+        self._vote_as_member_and_stranger()
+        admin = User.objects.create_superuser("yonetici@example.com", "yonetici", PASSWORD)
+        client = Client()
+        client.force_login(admin)
+        url = f"/{settings.ADMIN_URL}accounts/user/{self.member.pk}/delete/"
+        response = client.post(url, {"post": "yes"})
+        self.assertEqual(response.status_code, 302)
+        self._assert_member_votes_anonymized()
+
     def test_deleting_author_removes_polls_and_their_votes_only(self):
         self.vote(self.sinema, client=Client())
         member_poll = make_poll(self.member, "Üyenin anketi burada?")
