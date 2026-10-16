@@ -1,3 +1,5 @@
+import unicodedata
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -13,9 +15,20 @@ from .models import (
 )
 
 
+# Gorunmez ya da metnin yonunu/gorunumunu bozan karakterler: sifir genisluklu bosluk, kelime birlestirici,
+# BOM, yumusak tire, yon gecersiz kilma/gomme/izolasyon karakterleri (U+202A-202E, U+2066-2069).
+# ZWJ/ZWNJ (U+200D/200C) emoji ve bazi yazi sistemleri icin gerektiginden korunur.
+_STRIPPED_CHARS = {0x200B, 0x2060, 0xFEFF, 0x00AD, 0x180E, *range(0x202A, 0x202F), *range(0x2066, 0x206A)}
+
+
 def normalize_text(value):
-    """Bas/son bosluklari kirpar, ic bosluklari tek bosluga indirir."""
-    return " ".join((value or "").split())
+    """Kullanici metnini temizler: kontrol/gorunmez karakterleri atar, bosluklari tek bosluga indirir."""
+    kept = [
+        ch
+        for ch in (value or "")
+        if ord(ch) not in _STRIPPED_CHARS and (ch.isspace() or unicodedata.category(ch) != "Cc")
+    ]
+    return " ".join("".join(kept).split())
 
 
 class PollForm(forms.Form):

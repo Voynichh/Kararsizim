@@ -40,6 +40,9 @@ if not SECRET_KEY:
     SECRET_KEY = "yerel-gelistirme-icin-sahte-deger"
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1" if DEBUG else "")
+if not DEBUG and not ALLOWED_HOSTS:
+    # Bos ALLOWED_HOSTS ile uygulama her istege sessizce 400 verir; hatayi acik ver.
+    raise ImproperlyConfigured("ALLOWED_HOSTS ortam değişkeni tanımlı olmalı (ör. kararsizim.vercel.app).")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
 
 # Admin yolu: basinda "/" olmaz, sonunda "/" olur.
@@ -89,8 +92,9 @@ TEMPLATES = [
     },
 ]
 
+# Vercel, WSGI_APPLICATION ve ASGI_APPLICATION ikisi de tanimliysa ASGI'yi secer. Uygulama senkron
+# (WSGI) tasarlandigi icin yalnizca WSGI tanimlanir; asgi.py dosyasi yedek olarak durur.
 WSGI_APPLICATION = "config.wsgi.application"
-ASGI_APPLICATION = "config.asgi.application"
 
 # --- Veritabani ------------------------------------------------------------
 
@@ -112,6 +116,9 @@ if _database_url:
         DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
         DATABASES["default"].setdefault("OPTIONS", {})["prepare_threshold"] = None
 else:
+    if os.environ.get("VERCEL"):
+        # Vercel'de kalici dosya sistemi yoktur; SQLite'a sessizce dusmek yerine acikca basarisiz ol.
+        raise ImproperlyConfigured("Vercel'de DATABASE_URL tanımlı olmalı (SQLite kullanılamaz).")
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -120,10 +127,13 @@ else:
     }
 
 # Hiz sinirlama icin veritabani cache'i (tablo: manage.py createcachetable).
+# MAX_ENTRIES yuksek tutulur: varsayilan (300) asilinca Django kayitlarin 1/3'unu rastgele siler ve
+# aktif hiz siniri sayaclari da silinip sinirlar sifirlanabilir.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "kv_cache",
+        "OPTIONS": {"MAX_ENTRIES": 200_000, "CULL_FREQUENCY": 3},
     }
 }
 

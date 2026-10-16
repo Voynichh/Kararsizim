@@ -1,7 +1,12 @@
-"""Basit sabit pencere hiz sinirlama (veritabani cache'i uzerinde).
+"""Atomik, sabit pencereli hiz sinirlama (veritabani cache'i uzerinde).
 
-Cache anahtarlarinda ham IP/e-posta yer almaz (HMAC ozeti kullanilir) ve kayitlar pencere
-bitince kendiliginden gecersiz olur; hicbir kisisel veri kalici saklanmaz.
+Her izin verilen deneme, pencere icin ayrilmis `limit` adet "yuva" anahtarindan birini
+`cache.add()` ile talep eder. `add()` veritabaninda benzersiz anahtar eklemedir, yani atomiktir:
+ayni anda gelen yuzlerce istek bile ayni yuvayi iki kez alamaz ve limitin ustune cikamaz.
+(Eski "oku, artir, yaz" sayaci yaris durumunda limiti asabiliyordu.)
+
+Cache anahtarlarinda ham IP/e-posta yer almaz (HMAC ozeti kullanilir) ve kayitlar pencere bitince
+kendiliginden gecersiz olur; hicbir kisisel veri kalici saklanmaz.
 """
 
 import time
@@ -18,48 +23,54 @@ HOUR = 60 * MINUTE
 # (limit, pencere saniye)
 LOGIN_IP = (10, 15 * MINUTE)
 LOGIN_EMAIL = (5, 15 * MINUTE)
+ADMIN_LOGIN_IP = (10, 15 * MINUTE)
+ADMIN_LOGIN_EMAIL = (5, 15 * MINUTE)
 SIGNUP_IP = (5, HOUR)
 ACCOUNT_SENSITIVE_USER = (5, 15 * MINUTE)  # parola degistirme / hesap silme
 POLL_CREATE_USER = (10, HOUR)
 VOTE_IP = (30, MINUTE)
 
 
-def _key(scope, identifier, window, now=None):
-    bucket = int((time.time() if now is None else now) // window)
-    return f"rl:{scope}:{hash_identifier(f'{scope}:{identifier}')}:{bucket}"
+def _slots(scope, identifier, rule):
+    """(yuva anahtarlari, pencere sonuna kalan saniye)."""
+    limit, window = rule
+    now = time.time()
+    bucket = int(now // window)
+    base = f"rl:{scope}:{hash_identifier(f'{scope}:{identifier}')}:{bucket}"
+    timeout = int(window - (now % window)) + 1  # pencerenin bitisine kadar
+    return [f"{base}:{i}" for i in range(limit)], timeout
 
 
 def is_limited(scope, identifier, rule):
-    """Sayaci artirmadan, limite ulasilip ulasilmadigina bakar."""
-    limit, window = rule
-    return cache.get(_key(scope, identifier, window), 0) >= limit
+    """Yuva talep etmeden, limite ulasilip ulasilmadigina bakar."""
+    keys, _ = _slots(scope, identifier, rule)
+    return len(cache.get_many(keys)) >= len(keys)
 
 
-def record(scope, identifier, rule):
-    """Sayaci bir artirir ve yeni degeri dondurur.
+def reserve(scope, identifier, rule):
+    """Bir deneme hakki ayirir. Basariliysa yuva anahtarini, limit dolduysa None dondurur.
 
-    Kayit pencerenin bitisinde kendiliginden gecersiz olur. `cache.incr()` kullanilmaz: suresini
-    varsayilan 300 sn'ye sifirlar ve 15 dk/1 saatlik pencereleri kisaltir. `cache.add()` yalnizca
-    anahtar yokken denenir; yoksa her tekrarda veritabani "duplicate key" hatasi loglardi.
+    Deneme basarili olursa hak `release()` ile iade edilebilir (ornegin dogru parola girisi).
     """
-    _, window = rule
-    now = time.time()
-    key = _key(scope, identifier, window, now)
-    timeout = int(window - (now % window)) + 1  # pencerenin bitisine kadar
-    count = cache.get(key)
-    if count is None:
+    keys, timeout = _slots(scope, identifier, rule)
+    taken = cache.get_many(keys)
+    for key in keys:
+        if key in taken:
+            continue
         if cache.add(key, 1, timeout=timeout):
-            return 1
-        count = cache.get(key) or 0  # ayni anda baska istek olusturdu
-    count += 1
-    cache.set(key, count, timeout=timeout)
-    return count
+            return key
+    return None
+
+
+def release(key):
+    """`reserve()` ile ayrilmis hakki iade eder."""
+    if key:
+        cache.delete(key)
 
 
 def hit(scope, identifier, rule):
-    """Sayaci artirir; limit asildiysa True dondurur."""
-    limit, _ = rule
-    return record(scope, identifier, rule) > limit
+    """Bir deneme hakki harcar; limit dolduysa True dondurur (deneme reddedilmeli)."""
+    return reserve(scope, identifier, rule) is None
 
 
 def rate_limited_response(request):

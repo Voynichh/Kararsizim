@@ -38,4 +38,8 @@ class SecurityHeadersMiddleware:
             policy = CONTENT_SECURITY_POLICY
         response.headers["Content-Security-Policy"] = policy
         response.headers["Permissions-Policy"] = PERMISSIONS_POLICY
+        # Sayfalar kisiye gore degisir (oy durumu, oturum); ortak onbellekler (CDN/proxy) saklamasin.
+        # Daha siki bir deger (ornegin never_cache) koyan view'lara dokunulmaz.
+        if "Cache-Control" not in response.headers:
+            response.headers["Cache-Control"] = "private, no-cache"
         return response

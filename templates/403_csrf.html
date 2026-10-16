@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Doğrulama başarısız — kararsızım{% endblock %}
+
+{% block content %}
+<section class="error-page">
+  <p class="error-page__code">403</p>
+  <h1 class="error-page__title">Güvenlik doğrulaması başarısız.</h1>
+  <p class="error-page__text">Sayfa uzun süre açık kalmış ya da çerezlerin kapalı olabilir. Sayfayı yenileyip tekrar dene.</p>
+  <a class="btn btn--primary" href="/">Ana sayfaya dön</a>
+</section>
+{% endblock %}

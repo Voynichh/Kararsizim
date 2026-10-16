@@ -43,15 +43,17 @@ def detail(request, pk):
 @login_required
 def create(request):
     if request.method == "POST":
-        if ratelimit.is_limited("poll_create", request.user.pk, ratelimit.POLL_CREATE_USER):
+        # Hak atomik olarak ayrilir; yalnizca basarili kayitlar sayilir (gecersiz formda iade edilir).
+        slot = ratelimit.reserve("poll_create", request.user.pk, ratelimit.POLL_CREATE_USER)
+        if slot is None:
             return ratelimit.rate_limited_response(request)
         form = PollForm(request.POST)
         if form.is_valid():
             # Yazar her zaman oturumdaki kullanicidir; istekten okunmaz.
             poll = form.save(author=request.user)
-            ratelimit.record("poll_create", request.user.pk, ratelimit.POLL_CREATE_USER)
             messages.success(request, "Anketin yayında!")
             return redirect("polls:detail", pk=poll.pk)
+        ratelimit.release(slot)
     else:
         form = PollForm()
     return render(request, "polls/create.html", {"form": form})

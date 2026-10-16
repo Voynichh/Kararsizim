@@ -4,6 +4,7 @@ from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.shortcuts import redirect, render
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from core import ratelimit
@@ -45,18 +46,20 @@ def login_view(request):
     if request.method == "POST":
         ip = get_client_ip(request)
         email = (request.POST.get("email") or "").strip().lower()[:254]
-        if ratelimit.is_limited("login_ip", ip, ratelimit.LOGIN_IP) or (
-            email and ratelimit.is_limited("login_email", email, ratelimit.LOGIN_EMAIL)
-        ):
+        # Deneme hakki parola dogrulanmadan ONCE (atomik olarak) ayrilir; boylece ayni anda gelen
+        # yuzlerce istek limiti asamaz. Basarili giriste hak iade edilir (yalnizca basarisizlar sayilir).
+        ip_slot = ratelimit.reserve("login_ip", ip, ratelimit.LOGIN_IP)
+        email_slot = ratelimit.reserve("login_email", email, ratelimit.LOGIN_EMAIL) if email else None
+        if ip_slot is None or (email and email_slot is None):
+            ratelimit.release(ip_slot)
+            ratelimit.release(email_slot)
             return ratelimit.rate_limited_response(request)
         form = LoginForm(request, request.POST)
         if form.is_valid():
+            ratelimit.release(ip_slot)
+            ratelimit.release(email_slot)
             login(request, form.user)
             return redirect(next_url or settings.LOGIN_REDIRECT_URL)
-        # Yalnizca basarisiz denemeler sayilir.
-        ratelimit.record("login_ip", ip, ratelimit.LOGIN_IP)
-        if email:
-            ratelimit.record("login_email", email, ratelimit.LOGIN_EMAIL)
     else:
         form = LoginForm(request)
     return render(request, "accounts/login.html", {"form": form, "next": next_url})
@@ -69,11 +72,13 @@ def logout_view(request):
     return redirect(settings.LOGOUT_REDIRECT_URL)
 
 
+@never_cache
 @login_required
 def settings_view(request):
     return render(request, "accounts/settings.html")
 
 
+@never_cache
 @login_required
 def password_change(request):
     if request.method == "POST":
@@ -93,6 +98,7 @@ def password_change(request):
     return render(request, "accounts/password_change.html", {"form": form})
 
 
+@never_cache
 @login_required
 def delete_account(request):
     if request.method == "POST":

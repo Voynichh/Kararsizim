@@ -1,8 +1,9 @@
 {% load humanize %}<article class="card poll-card" id="poll-{{ poll.pk }}">
   <p class="poll-card__meta">@{{ poll.author.username }} · <time datetime="{{ poll.created_at|date:'c' }}">{{ poll.created_at|naturaltime }}</time></p>
-  <h2 class="poll-card__question">
+  {% if as_h1 %}<h1 class="poll-card__question">{{ poll.question }}</h1>
+  {% else %}<h2 class="poll-card__question">
     {% if link %}<a href="{% url 'polls:detail' poll.pk %}">{{ poll.question }}</a>{% else %}{{ poll.question }}{% endif %}
-  </h2>
+  </h2>{% endif %}
 
   {% if poll.show_results %}
   <ul class="option-list" data-results>

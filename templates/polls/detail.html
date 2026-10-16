@@ -4,7 +4,7 @@
 {% block title %}{{ poll.question }} — kararsızım{% endblock %}
 
 {% block content %}
-{% include "partials/poll_card.html" %}
+{% include "partials/poll_card.html" with as_h1=True %}
 
 <div class="detail-actions">
   <a href="{% url 'polls:feed' %}">← Tüm anketler</a>

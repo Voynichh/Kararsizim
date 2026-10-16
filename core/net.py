@@ -41,7 +41,8 @@ def hash_identifier(value):
 def get_safe_next(request):
     """`next` parametresi bu siteye aitse dondurur, degilse bos string (acik yonlendirme yok)."""
     url = request.POST.get("next") or request.GET.get("next") or ""
-    if url and url_has_allowed_host_and_scheme(
+    # Yalnizca bu sitenin kendi yollari ("/..."): sema/host iceren veya "/" ile baslamayan degerler reddedilir.
+    if url.startswith("/") and url_has_allowed_host_and_scheme(
         url,
         allowed_hosts={request.get_host()},
         require_https=request.is_secure(),

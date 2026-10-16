@@ -101,10 +101,26 @@ main.container {
 }
 
 .logo {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--text);
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+/* Ekran okuyuculara görünür, gözle görünmez (ör. sayfa başlığı). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .logo:hover {
@@ -124,6 +140,10 @@ main.container {
 }
 
 .site-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 12px;
   color: var(--text-muted);
 }
 
@@ -308,10 +328,31 @@ main.container {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+  max-width: 11em;
   padding: 0 6px;
+  overflow: hidden;
   color: var(--text);
   font-weight: 600;
-  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dar ekranlarda üst çubuk iki düzenli satır olur: logo, altında menü (kullanıcı adı uzunluğundan bağımsız). */
+@media (max-width: 480px) {
+  .site-header {
+    position: static;
+  }
+
+  .site-header__inner {
+    flex-wrap: wrap;
+    gap: 0 12px;
+    padding-block: 4px 8px;
+  }
+
+  .site-nav {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
 }
 
 .inline-form {
@@ -345,9 +386,17 @@ main.container > .card + .card {
 }
 
 .auth-card__alt {
-  margin: 20px 0 0;
+  margin: 12px 0 0;
   text-align: center;
   color: var(--text-muted);
+}
+
+.auth-card__alt a,
+.detail-actions > a:not(.btn) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 4px;
 }
 
 .field__help {
@@ -439,6 +488,10 @@ main.container > .card + .card {
 }
 
 .poll-card__question a {
+  /* Görünüm aynı kalır; dokunma alanı en az 44px olur. */
+  display: block;
+  padding-block: 12px;
+  margin-block: -12px;
   color: var(--text);
 }
 

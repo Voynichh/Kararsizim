@@ -50,9 +50,11 @@ class SafeNextTests(TestCase):
             with self.subTest(next=evil):
                 self.assertEqual(get_safe_next(self.factory.get("/giris/", {"next": evil})), "")
 
-    def test_same_host_absolute_url_allowed(self):
-        request = self.factory.get("/giris/", {"next": "http://testserver/hesap/"})
-        self.assertEqual(get_safe_next(request), "http://testserver/hesap/")
+    def test_only_site_relative_paths_are_accepted(self):
+        # Mutlak URL'ler (kendi host'umuz dahil) ve "/" ile baslamayan baglı yollar reddedilir.
+        for value in ("http://testserver/hesap/", "hesap/", "%2f%2fkotu-site.com", "?x=1", "/\\kotu-site.com"):
+            with self.subTest(next=value):
+                self.assertEqual(get_safe_next(self.factory.get("/giris/", {"next": value})), "")
 
     def test_missing_next_returns_empty(self):
         self.assertEqual(get_safe_next(self.factory.get("/giris/")), "")
@@ -74,12 +76,30 @@ class RateLimitTests(TestCase):
         self.assertFalse(ratelimit.hit("b", "x", self.RULE))
         self.assertFalse(ratelimit.hit("a", "y", self.RULE))
 
-    def test_is_limited_does_not_increment(self):
+    def test_is_limited_does_not_consume_attempts(self):
         for _ in range(10):
             self.assertFalse(ratelimit.is_limited("t", "kimlik", self.RULE))
         for _ in range(3):
-            ratelimit.record("t", "kimlik", self.RULE)
+            self.assertIsNotNone(ratelimit.reserve("t", "kimlik", self.RULE))
         self.assertTrue(ratelimit.is_limited("t", "kimlik", self.RULE))
+        self.assertIsNone(ratelimit.reserve("t", "kimlik", self.RULE))
+
+    def test_release_gives_the_attempt_back(self):
+        slots = [ratelimit.reserve("t", "kimlik", self.RULE) for _ in range(3)]
+        self.assertIsNone(ratelimit.reserve("t", "kimlik", self.RULE))
+        ratelimit.release(slots[1])
+        self.assertIsNotNone(ratelimit.reserve("t", "kimlik", self.RULE))
+        ratelimit.release(None)  # None guvenle yok sayilir
+
+    def test_concurrent_requests_cannot_exceed_the_limit(self):
+        # Yaris durumunu belirleyici sekilde simule eder: tum istekler sayaci "bos" gorur (get_many bayat),
+        # yine de yalnizca `limit` kadari yuva alabilir, cunku cache.add() atomiktir.
+        from unittest import mock
+
+        with mock.patch.object(ratelimit.cache, "get_many", return_value={}):
+            results = [ratelimit.reserve("race", "kimlik", self.RULE) for _ in range(25)]
+        self.assertEqual(sum(slot is not None for slot in results), 3)
+        self.assertEqual(len({slot for slot in results if slot}), 3)  # her yuva yalnizca bir kez
 
     def _expiry_seconds_from_now(self):
         from datetime import datetime, timezone as dt_timezone
@@ -87,32 +107,44 @@ class RateLimitTests(TestCase):
 
         with connection.cursor() as cursor:
             cursor.execute("SELECT expires FROM kv_cache")
-            (expires,) = cursor.fetchone()
-        if isinstance(expires, str):
-            expires = datetime.fromisoformat(expires)
-        if expires.tzinfo is None:
-            expires = expires.replace(tzinfo=dt_timezone.utc)
-        return expires.timestamp() - _time.time()
+            rows = cursor.fetchall()
+        deltas = []
+        for (expires,) in rows:
+            if isinstance(expires, str):
+                expires = datetime.fromisoformat(expires)
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=dt_timezone.utc)
+            deltas.append(expires.timestamp() - _time.time())
+        return deltas
 
-    def test_counter_expires_at_window_end_not_after_cache_default_timeout(self):
-        # cache.incr() suresini varsayilan 300 sn'ye sifirlardi; uzun pencereler kisalirdi.
+    def test_slots_expire_at_window_end_not_after_cache_default_timeout(self):
+        # Varsayilan 300 sn'lik omur uzun pencereleri (15 dk, 1 saat) fiilen kisaltirdi.
         import time as _time
 
         rule = (3, 3600)
         for _ in range(3):
-            ratelimit.record("ttl", "kimlik", rule)
+            ratelimit.reserve("ttl", "kimlik", rule)
         expected = 3600 - (_time.time() % 3600) + 1
-        self.assertAlmostEqual(self._expiry_seconds_from_now(), expected, delta=5)
+        deltas = self._expiry_seconds_from_now()
+        self.assertEqual(len(deltas), 3)
+        for delta in deltas:
+            self.assertAlmostEqual(delta, expected, delta=5)
 
-    def test_record_does_not_trigger_duplicate_key_errors_on_repeat_hits(self):
-        # Mevcut anahtar icin cache.add() denenmemeli (veritabani loguna "duplicate key" duserdi).
+    def test_reserve_skips_occupied_slots_without_failing_inserts(self):
+        # Dolu yuvalar icin cache.add() denenmemeli (veritabani loguna "duplicate key" duserdi).
         from unittest import mock
 
-        ratelimit.record("t", "kimlik", self.RULE)
+        for _ in range(2):
+            ratelimit.reserve("t", "kimlik", self.RULE)
         with mock.patch.object(ratelimit.cache, "add", wraps=ratelimit.cache.add) as add:
-            for _ in range(5):
-                ratelimit.record("t", "kimlik", self.RULE)
-        add.assert_not_called()
+            ratelimit.reserve("t", "kimlik", self.RULE)
+        self.assertEqual(add.call_count, 1)
+
+    def test_cache_is_configured_with_a_large_max_entries(self):
+        # Varsayilan MAX_ENTRIES=300 asilinca aktif sayaclar rastgele silinebilirdi.
+        from django.conf import settings
+
+        self.assertGreaterEqual(settings.CACHES["default"]["OPTIONS"]["MAX_ENTRIES"], 100_000)
 
     def test_cache_keys_contain_no_raw_ip_or_email(self):
         ratelimit.hit("login_ip", "203.0.113.7", self.RULE)

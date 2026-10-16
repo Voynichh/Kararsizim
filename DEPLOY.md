@@ -68,7 +68,11 @@ python manage.py createsuperuser  # e-posta + kullanıcı adı + güçlü ve ben
    | `ADMIN_URL` | Tahmin edilemez: `python -c "import secrets; print('yonetim-' + secrets.token_urlsafe(12) + '/')"` |
    | `TRUST_PROXY_IP_HEADER` | `True` |
 
-   **Preview** ortamı: `DATABASE_URL` **verme** (preview'lar production veritabanına bağlanmamalı). `SECRET_KEY` için production'dan **farklı** rastgele bir değer, `DEBUG=False`, `ALLOWED_HOSTS=.vercel.app` yeterlidir. Preview'larda veritabanı gerektiren sayfalar çalışmaz; bu beklenen davranıştır.
+   **Preview** ortamı: hiçbir değişken **verme**. Uygulama Vercel'de `DATABASE_URL` yoksa bilerek başlamayı reddeder (SQLite'a düşmez), yani preview deployment'lar derlenemez/çalışmaz; bu istenen davranıştır (preview'lar production veritabanına asla bağlanmamalı ve içerik sunmamalı). Yalnızca `master` dalına push edildiği sürece zaten preview oluşmaz.
+
+   **Adres notu:** Vercel `<proje-adı>.vercel.app` adresini vermeyebilir (başkası almışsa `kararsizim-ruddy.vercel.app` gibi ek getirir). İlk deploy'dan sonra gerçek adresi *Project → Domains* sayfasından oku ve `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS` değerlerini ona göre yaz. `ALLOWED_HOSTS` boşsa uygulama artık sessizce 400 vermez, açık bir hatayla başlamaz (build logunda görünür).
+
+   **Vercel Authentication:** Vercel, özel alan adı olmayan tüm adresleri (production dahil) varsayılan olarak Vercel girişiyle korur. Bu, siteyi doğrulayana kadar iyi bir şeydir; herkese açmak için *Settings → Deployment Protection* ayarını bilerek gevşetirsin.
 3. *Settings → Deployment Protection*: **Standard Protection** (veya daha sıkısı) açık olsun; preview adreslerine yalnızca oturum açmış ekip erişebilsin.
 4. *Deploy* et. Değişkenleri deploy'dan sonra eklediysen **Redeploy** gerekir.
 
@@ -113,6 +117,9 @@ Migration içermeyen değişiklikler için yalnızca `git push` yeterlidir. Bağ
 | `password authentication failed` | Parolada özel karakter varsa % ile kodla ya da yalnızca harf/rakam içeren yeni parola belirle. |
 | Girişte herkes aynı hız sınırına takılıyor | `TRUST_PROXY_IP_HEADER=True` değil; Vercel'de bu değişken tanımlı olmalı. |
 | `ImproperlyConfigured: SECRET_KEY` | İlgili ortamda (Production/Preview) `SECRET_KEY` tanımlı değil. |
+| `ImproperlyConfigured: ALLOWED_HOSTS` | `ALLOWED_HOSTS` tanımlı değil; canlı adresi yaz. |
+| `ImproperlyConfigured: Vercel'de DATABASE_URL` | Production'da `DATABASE_URL` (Transaction pooler) eksik. |
+| Vercel'in kendi "404: NOT_FOUND" sayfası | İstek uygulamaya hiç ulaşmamış demektir (Django 404'ü değil). *Deployments → ilgili deploy → Build Logs* ve *Runtime Logs*'a bak; Python/giriş noktası algılanmamış olabilir (`config/wsgi.py` ve `WSGI_APPLICATION` kontrol edilir). |
 
 ## Supabase loglarında görebileceğin normal "error" kayıtları
 
