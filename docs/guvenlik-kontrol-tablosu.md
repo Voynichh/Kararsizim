@@ -47,7 +47,8 @@ Testleri çalıştırmak: `python manage.py test` (her zaman yerel SQLite). Canl
 | CSP + Permissions-Policy her yanıtta | ✅ ✅c | `config/middleware.py`; canlı yanıt başlıkları birebir doğrulandı (CSP, `permissions-policy: camera=(), microphone=(), geolocation=(), payment=()`) |
 | Şablonlarda inline script/style/`style=`/`onclick=` yok | ✅ | `polls/test_voting.py::JavaScriptSafetyTests`; canlı konsolda CSP ihlali yok |
 | Admin için gevşetme yalnızca admin yolunda (yalnızca stil) | ✅ | `core/tests.py::test_csp_relaxation_applies_only_to_admin` |
-| Statik dosya yanıtlarında başlıklar (`nosniff`, `immutable`, CORP) ve hash'li adlar | ⏳ | `vercel.json`, `config/storage.py`; testler hazır (`core/test_static_and_meta.py`), **canlıda ilk deploy sonrası doğrulanacak** |
+| Statik dosya yanıtlarında başlıklar (`nosniff`, CORP, sandbox CSP) | ✅c | `vercel.json`; canlıda `x-content-type-options: nosniff` doğrulandı (kullanıcı, 2026-10-16) |
+| Statik dosyalarda hash'li adlar (cache-busting) | ⚠️ | `config/storage.py` yerelde hash'li adlar üretir, ama **Vercel çalışma ortamında manifest yok**: canlıda dosya adları hash'siz geldi (depolama çökmeden hash'siz adrese düşüyor). Bu yüzden `immutable` bilerek verilmiyor; `max-age=0, must-revalidate` ile eski dosya kalmaz. Gerçek cache-busting için manifestsiz `?v=<özet>` depolaması ileride eklenebilir |
 | Konsoldaki sarı "Permissions-Policy" uyarıları | ✅c | Bizim başlığımızda değil: uyarılar tarayıcının tanımadığı Privacy Sandbox özelliklerini (`browsing-topics` vb.) anlatıyor, bizim başlığımız yalnızca `camera/microphone/geolocation/payment` içerir; kaynak Vercel/tarayıcı tarafı, zararsız |
 
 ## 10.5 XSS, injection ve yetkilendirme
@@ -119,7 +120,7 @@ Testleri çalıştırmak: `python manage.py test` (her zaman yerel SQLite). Canl
 
 ## Açık kalanlar (hepsi senin eyleminle veya canlı denemeyle kapanır)
 
-1. ⏳ Statik dosya başlıkları ve hash'li adlar: ilk deploy sonrası canlıda doğrulanacak.
+1. ⚠️ Statik dosyalarda canlıda hash'li ad yok (yukarıya bak); zararsız, `must-revalidate` ile güvenli.
 2. ⏳ Canlıda hız sınırı denemesi (6 hatalı giriş → 429).
 3. ⏳ Süper kullanıcı oluşturulurken güçlü parola.
 4. ⚠️ Dependabot'un GitHub'da etkin olduğunu teyit et.

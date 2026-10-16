@@ -86,7 +86,7 @@ python manage.py createsuperuser  # e-posta + kullanıcı adı + güçlü ve ben
   curl -sI https://kararsizim.vercel.app/ | grep -i -E "strict-transport|content-security|x-frame"
   ```
 - [ ] `/admin/` **404** veriyor; admin yalnızca `ADMIN_URL` yolunda açılıyor.
-- [ ] Statik dosyalar hash'li adla geliyor (sayfa kaynağında `main.<12 hane>.css`) ve yanıt başlıklarında `cache-control: public, max-age=31536000, immutable` ile `x-content-type-options: nosniff` var (F12 → Network → `main.….css` → Headers). Arama motorları kapalı: `…/robots.txt` içinde `Disallow: /` yazıyor.
+- [ ] Statik dosya yanıtlarında (F12 → Network → `main.css` → Headers) `cache-control: public, max-age=0, must-revalidate` ve `x-content-type-options: nosniff` var. (Vercel'in çalışma ortamında `collectstatic` manifesti olmadığı için dosya adları hash'siz gelir; bu beklenen davranıştır, `immutable` bilerek verilmez.) Arama motorları kapalı: `…/robots.txt` içinde `Disallow: /` yazıyor.
 - [ ] Anket detay sayfasında "Linki kopyala" düğmesi çalışıyor; yapıştırınca `…/anket/<id>/` (sorgu dizisiz) adresi çıkıyor.
 - [ ] Rastgele bir adres (`/yok/`) Django debug ekranı değil, yalnızca "Aradığın sayfayı bulamadık." diyen temalı 404 gösteriyor (adres listesi, `admin/`, ayar veya hata detayı görünmemeli). Vercel'de `DEBUG` yanlışlıkla `True` kalırsa uygulama zaten başlamaz (`DEBUG=True Vercel'de kullanılamaz` hatası; Vercel → Deployments → build/runtime loglarında görünür).
 - [ ] **Data API kapalı:** aşağıdaki istek veri döndürmemeli (hata veya 4xx beklenir):

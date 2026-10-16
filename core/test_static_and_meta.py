@@ -43,12 +43,16 @@ class HashedStaticFilesTests(SimpleTestCase):
         with tempfile.TemporaryDirectory() as tmp, override_settings(STATIC_ROOT=tmp, DEBUG=False):
             self.assertEqual(staticfiles_storage.url("css/main.css"), "/static/css/main.css")
 
-    def test_vercel_json_sets_long_cache_and_nosniff_for_static_only(self):
+    def test_vercel_json_revalidates_static_files_and_sets_nosniff(self):
+        # Vercel'in calisma ortaminda collectstatic manifesti yok: adresler hash'siz kalir. Hash'siz bir dosyaya
+        # "immutable"/uzun max-age vermek, CSS/JS degistiginde tarayicilarin eski dosyayi tutmasina yol acar.
         config = json.loads((Path(settings.BASE_DIR) / "vercel.json").read_text(encoding="utf-8"))
         (rule,) = config["headers"]
         self.assertEqual(rule["source"], "/static/(.*)")
         headers = {h["key"]: h["value"] for h in rule["headers"]}
-        self.assertIn("immutable", headers["Cache-Control"])
+        self.assertNotIn("immutable", headers["Cache-Control"])
+        self.assertIn("must-revalidate", headers["Cache-Control"])
+        self.assertIn("max-age=0", headers["Cache-Control"])
         self.assertEqual(headers["X-Content-Type-Options"], "nosniff")
         self.assertIn("sandbox", headers["Content-Security-Policy"])
         # Uygulama sayfalarinin onbellegi vercel.json'dan degil Django'dan gelir.
