@@ -102,6 +102,7 @@ Testleri çalıştırmak: `python manage.py test` (her zaman yerel SQLite). Canl
 | `ADMIN_URL` tahmin edilemez, `/admin/` 404 | ✅c | Canlıda `/admin/` 404 (kullanıcı doğruladı) |
 | Üretimde panel açıkken `ADMIN_URL` boş/`admin/` ise uygulama başlamaz (yanlış yapılandırmada panel tahmin edilebilir yolda açılmaz) | ✅ | `config/settings.py`; `core/test_production_settings.py::AdminUrlGuardTests` |
 | Yönetici/resmi hesap gibi görünen kullanıcı adları kayıtta alınamaz (taklit önlemi) | ✅ | `accounts/models.py:is_reserved_username`; `accounts/test_auth.py::ReservedUsernameTests` |
+| Canlı sonuçların oy zamanlamasından "kim neye oy verdi" tahminine açık olduğu gizlilik metninde açıkça yazılı (O1, karar: seçenek C; kodda sınırlama yok) | ⚠️ kabul edilmiş risk | `templates/core/privacy.html`; `accounts/test_auth.py` |
 | Gizlilik metni: yönetici e-postayı görebilir, üyenin oyu veritabanında hesapla eşleşik, Vercel IP'yi loglayabilir | ✅ | `templates/core/privacy.html`; `accounts/test_auth.py` |
 | Admin yalnızca gizli `ADMIN_URL` yolunda; `ADMIN_ENABLED=False` ile tamamen kapatılabilir (yol hiç kayıtlı değil, 404) | ✅ | `config/urls.py`; `core/test_production_settings.py::AdminSwitchTests` |
 | Süper kullanıcı parolası güçlü ve benzersiz | ⏳ | Henüz süper kullanıcı oluşturulmadı; oluşturulunca güçlü parola seçilmeli |

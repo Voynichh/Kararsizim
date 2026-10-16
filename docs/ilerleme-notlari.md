@@ -12,7 +12,7 @@ Uygulama (Faz 0–5) kodlanmış, testli ve **canlıda çalışıyor**. Site **h
 | Vercel | takım `gader1`, proje `kararsizim` (`prj_3XxVMmlwF3ZOAZUVOftRThvB7Dho`); `master`'a her push otomatik production deploy eder; fonksiyon bölgesi `fra1` (veritabanıyla aynı) |
 | Supabase | proje `kararsizim`, ref `aegjryeihvhzymamuonp`, `eu-central-1`; Data API kapalı (alan adı çözülmüyor); 14/14 tabloda RLS, `anon`/`authenticated` yetkisi 0 |
 | GitHub | https://github.com/Voynichh/Kararsizim (`master`) |
-| Testler | 298 test geçiyor (`python manage.py test`, her zaman SQLite); `tools/prod_audit.py` 54/54; `pip-audit` temiz |
+| Testler | 299 test geçiyor (`python manage.py test`, her zaman SQLite); `tools/prod_audit.py` 54/54; `pip-audit` temiz |
 | Python / Django | yerel 3.15, canlı 3.14 (`.python-version`, Vercel 3.15'i desteklemiyor) / Django 6.1 |
 
 ## Yapılanlar
@@ -38,7 +38,7 @@ Uygulama (Faz 0–5) kodlanmış, testli ve **canlıda çalışıyor**. Site **h
 
 ## Bekleyen / sıradaki işler (öncelik sırasıyla)
 
-1. **O1 kararı (kullanıcıdan bekleniyor):** canlı sonuçlar küçük grupta "kim neye oy verdi" çıkarımına açık (biri oy verince sayı değişiyor). Seçenekler: **A** seçenek bazlı sonuçlar toplam oy ≥5 olana kadar gizli (önerilen), **B** canlıda yalnızca toplam güncellensin, yüzdeler F5'te, **C** olduğu gibi + gizlilik metnine not. Hiçbiri zamanlama sızıntısını tamamen kapatmaz. Karar verilmeden kodlanmaz.
+1. ~~O1 kararı~~ — **verildi: C** (2026-10-16). Canlı sonuçlar küçük grupta "kim neye oy verdi" çıkarımına açık (biri oy verince sayı değişiyor); kod değiştirilmedi, risk gizlilik metnine açıkça yazıldı ("Sonuçlar canlı güncellenir" bölümü). Sonradan sertleştirmek istenirse seçenekler: **A** seçenek bazlı sonuçlar toplam oy ≥5 olana kadar gizli, **B** canlıda yalnızca toplam güncellensin. Hiçbiri zamanlama sızıntısını tamamen kapatmaz.
 2. **O2 (kullanıcı, Vercel paneli):** Firewall'da okuma uçları (`/`, `/anket/sonuclar/`, `/anket/kartlar/`) için IP başına ~120 istek/dk hız sınırı kuralı (fonksiyon kotası/erişilebilirlik). Mevcut Firewall kuralları MCP'den okunamadı.
 3. **Kullanıcı teyitleri:** GitHub'da **Dependabot** etkin mi; Supabase'de **SSL zorlaması** ve yedekler; Vercel/Supabase/GitHub hesaplarında **2FA**.
 4. **Vercel'de gereksiz değişkenler (silinebilir, zararsız):** `SIGNUP_INVITE_CODE`, `ADMIN_ENABLED` (varsayılan zaten açık). `MAINTENANCE_MODE` `False` değerinde duruyor.

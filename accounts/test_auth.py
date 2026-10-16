@@ -302,6 +302,13 @@ class HeaderAndPrivacyTests(AuthTestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path).status_code, 302)
 
+    def test_privacy_page_discloses_live_results_and_timing_inference(self):
+        html = self.client.get("/gizlilik/").content.decode()
+        self.assertIn("Sonuçlar canlı güncellenir", html)
+        self.assertIn("birkaç saniyede bir kendiliğinden güncellenir", html)
+        self.assertIn("oyunu <strong>tahmin edebilir</strong>", html)
+        self.assertIn("az kişinin oy verdiği anketlerde", html)
+
     def test_privacy_page_discloses_admin_access_vote_link_and_host_logs(self):
         html = self.client.get("/gizlilik/").content.decode()
         self.assertIn("Site yöneticisi, hesapları yönetebilmek için e-posta adresini görebilir", html)
