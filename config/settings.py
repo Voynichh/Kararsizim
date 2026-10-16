@@ -51,6 +51,12 @@ ADMIN_URL = os.environ.get("ADMIN_URL", "admin/").strip().strip("/") + "/"
 # Yalnizca Vercel'de True: istemci IP'si proxy basligindan okunur (core/net.py).
 TRUST_PROXY_IP_HEADER = env_bool("TRUST_PROXY_IP_HEADER", False)
 
+# Kapali test icin kayit davet kodu (accounts/forms.py). Bos ise kayit herkese aciktir ve formda
+# davet kodu alani gorunmez. Dolu ise en az 12 karakter olmali (tahmin edilemesin diye).
+SIGNUP_INVITE_CODE = os.environ.get("SIGNUP_INVITE_CODE", "").strip()
+if SIGNUP_INVITE_CODE and len(SIGNUP_INVITE_CODE) < 12:
+    raise ImproperlyConfigured("SIGNUP_INVITE_CODE en az 12 karakter olmalı.")
+
 # Prototip asamasinda arama motorlari siteyi indekslemesin (X-Robots-Tag + robots.txt).
 # Halka acik yayinda bilerek ALLOW_SEARCH_INDEXING=True yapilir.
 ALLOW_SEARCH_INDEXING = env_bool("ALLOW_SEARCH_INDEXING", False)

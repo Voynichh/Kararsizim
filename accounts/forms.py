@@ -1,4 +1,7 @@
+import hmac
+
 from django import forms
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordChangeForm as DjangoPasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
@@ -12,6 +15,14 @@ LOGIN_ERROR_MESSAGE = "E-posta veya parola hatalı."
 
 
 class SignupForm(forms.Form):
+    invite_code = forms.CharField(
+        label="Davet kodu",
+        max_length=128,
+        help_text="Şimdilik yalnızca davetle kayıt alınıyor.",
+        widget=forms.TextInput(
+            attrs={"autocomplete": "off", "autocapitalize": "none", "spellcheck": "false"}
+        ),
+    )
     email = forms.EmailField(
         label="E-posta",
         max_length=254,
@@ -43,15 +54,34 @@ class SignupForm(forms.Form):
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Kod ayari calisma aninda okunur; bos ise alan hic gosterilmez.
+        self.invite_required = bool(settings.SIGNUP_INVITE_CODE)
+        if not self.invite_required:
+            del self.fields["invite_code"]
+
+    def clean_invite_code(self):
+        submitted = self.cleaned_data["invite_code"].strip().encode()
+        expected = settings.SIGNUP_INVITE_CODE.encode()
+        # Sabit zamanli karsilastirma; deneme sayisini kayit hiz siniri (IP basina) sinirlar.
+        if not hmac.compare_digest(submitted, expected):
+            raise ValidationError("Davet kodu geçersiz.")
+        return submitted.decode()
+
+    def _invite_rejected(self):
+        # Kodu yanlis olan biri e-posta/kullanici adi var mi diye yoklayamasin.
+        return self.invite_required and "invite_code" in self.errors
+
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
-        if User.objects.filter(email=email).exists():
+        if not self._invite_rejected() and User.objects.filter(email=email).exists():
             raise ValidationError(EMAIL_TAKEN_MESSAGE)
         return email
 
     def clean_username(self):
         username = self.cleaned_data["username"]
-        if User.objects.filter(username__iexact=username).exists():
+        if not self._invite_rejected() and User.objects.filter(username__iexact=username).exists():
             raise ValidationError("Bu kullanıcı adı zaten alınmış.")
         return username
 

@@ -20,6 +20,7 @@ Testleri çalıştırmak: `python manage.py test` (her zaman yerel SQLite). Canl
 
 | Madde | Durum | Kanıt |
 |---|---|---|
+| Kayıt davet kodu (`SIGNUP_INVITE_CODE`): sabit zamanlı karşılaştırma, yanlış kodda e-posta/kullanıcı adı varlığı sızmaz, tahmin kayıt hız sınırına (5/saat/IP) tabi, kod ≥12 karakter | ✅ | `accounts/forms.py`; `accounts/test_auth.py::SignupInviteTests` (canlı doğrulama ⏳: Vercel'e değişken eklenip Redeploy sonrası) |
 | Giriş (IP 10/15 dk, e-posta 5/15 dk), kayıt (5/saat), parola/hesap silme (5/15 dk), anket (10/saat), oy (30/dk), **admin girişi** | ✅ | `core/ratelimit.py`; `accounts/test_auth.py`, `polls/tests.py`, `polls/test_voting.py`, `core/test_hardening.py::AdminLoginRateLimitTests` |
 | **Atomik** sayaç (aynı anda gelen istekler limiti aşamaz) | ✅ | `core/test_net_ratelimit.py::test_concurrent_requests_cannot_exceed_the_limit`, `core/test_hardening.py::LoginConcurrencyTests` |
 | Cache anahtarlarında ham IP/e-posta yok (HMAC-SHA256), süresi pencere sonunda dolar | ✅ | `core/net.py::hash_identifier`; `test_cache_keys_contain_no_raw_ip_or_email`, `test_slots_expire_at_window_end_...` |

@@ -1,6 +1,11 @@
+import os
+import subprocess
+import sys
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 
 User = get_user_model()
 
@@ -26,6 +31,7 @@ class AuthTestCase(TestCase):
         return data
 
 
+@override_settings(SIGNUP_INVITE_CODE="")
 class SignupTests(AuthTestCase):
     def test_valid_signup_creates_user_logs_in_and_redirects(self):
         response = self.client.post("/kayit/", self.signup_data(), follow=True)
@@ -112,6 +118,65 @@ class SignupTests(AuthTestCase):
         response = client.post("/kayit/", self.signup_data())
         self.assertEqual(response.status_code, 403)
         self.assertEqual(User.objects.count(), 0)
+
+
+INVITE = "davet-kodu-test-1234"
+
+
+@override_settings(SIGNUP_INVITE_CODE=INVITE)
+class SignupInviteTests(AuthTestCase):
+    def test_form_shows_invite_field_when_code_is_set(self):
+        self.assertContains(self.client.get("/kayit/"), 'name="invite_code"')
+
+    @override_settings(SIGNUP_INVITE_CODE="")
+    def test_form_hides_invite_field_when_code_is_empty(self):
+        self.assertNotContains(self.client.get("/kayit/"), "invite_code")
+
+    def test_correct_code_creates_user(self):
+        response = self.client.post("/kayit/", self.signup_data(invite_code=f"  {INVITE} "))
+        self.assertRedirects(response, "/")
+        self.assertTrue(User.objects.filter(email="yeni@example.com").exists())
+
+    def test_missing_code_is_rejected(self):
+        response = self.client.post("/kayit/", self.signup_data())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_wrong_code_is_rejected_without_leaking_code_or_account_existence(self):
+        self.make_user(email="yeni@example.com", username="yeni_kullanici")
+        response = self.client.post("/kayit/", self.signup_data(invite_code="yanlis-kod-123456"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Davet kodu geçersiz.")
+        self.assertNotContains(response, INVITE)
+        # Kodu bilmeyen kisi e-posta/kullanici adi kayitli mi ogrenemez.
+        self.assertNotContains(response, "zaten alınmış")
+        self.assertNotContains(response, "kayıt oluşturulamadı")
+        self.assertEqual(User.objects.count(), 1)
+
+    def test_taken_email_is_reported_only_with_valid_code(self):
+        self.make_user(email="yeni@example.com", username="baska")
+        response = self.client.post("/kayit/", self.signup_data(invite_code=INVITE))
+        self.assertContains(response, "Bu e-posta ile kayıt oluşturulamadı")
+
+    def test_invite_guessing_is_rate_limited(self):
+        for _ in range(5):
+            response = self.client.post("/kayit/", self.signup_data(invite_code="tahmin-123456789"))
+            self.assertEqual(response.status_code, 200)
+        response = self.client.post("/kayit/", self.signup_data(invite_code=INVITE))
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(User.objects.count(), 0)
+
+    def test_short_configured_code_is_refused_at_startup(self):
+        env = {**os.environ, "SIGNUP_INVITE_CODE": "kisa", "SECRET_KEY": "x", "DEBUG": "True"}
+        result = subprocess.run(
+            [sys.executable, "-c", "import config.settings"],
+            cwd=settings.BASE_DIR,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SIGNUP_INVITE_CODE", result.stderr)
 
 
 class LoginTests(AuthTestCase):
