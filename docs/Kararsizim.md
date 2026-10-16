@@ -437,7 +437,7 @@ Bu bölümdeki her madde **zorunludur**. Her faz, kendi kapsamına giren maddele
 |---|---|---|
 | Giriş denemesi | IP | 10 / 15 dk |
 | Giriş denemesi | e-posta | 5 / 15 dk |
-| Kayıt | IP | 5 / saat |
+| Kayıt | IP | 20 / saat (başta 5'ti; aynı ağdaki arkadaş grubu için artırıldı) |
 | Parola değiştirme / hesap silme denemesi | kullanıcı | 5 / 15 dk |
 | Anket oluşturma | kullanıcı | 10 / saat |
 | Oy verme | IP | 30 / dakika |

@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test import Client, TestCase
 
+from core import ratelimit
+
 User = get_user_model()
 
 PASSWORD = "mavi-bulut-kahve-42"
@@ -95,7 +97,7 @@ class SignupTests(AuthTestCase):
         self.assertTrue(user.password.startswith("argon2"))
 
     def test_signup_is_rate_limited_per_ip(self):
-        for _ in range(5):
+        for _ in range(ratelimit.SIGNUP_IP[0]):
             response = self.client.post("/kayit/", self.signup_data(username="x"))
             self.assertEqual(response.status_code, 200)
         response = self.client.post("/kayit/", self.signup_data())
