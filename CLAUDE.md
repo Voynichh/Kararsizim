@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Çalışma kuralları (özet)
 
-- Her seferde yalnızca istenen fazı uygula; sonraki fazlara geçme. Mevcut durum: **Faz 0–5 tamam ve uygulama canlıda** (https://kararsizim-blush.vercel.app, Vercel Authentication açık = yalnızca sahibine açık; Supabase proje "kararsizim"). Kaldığımız yer ve bekleyen işler (süper kullanıcı, korumayı gevşetme, akraba testi) için **`docs/ilerleme-notlari.md`**'yi oku. Yerelde `DATABASE_URL` boşken SQLite kullanılır.
+- Her seferde yalnızca istenen fazı uygula; sonraki fazlara geçme. Mevcut durum: **Faz 0–5 tamam ve uygulama herkese açık canlıda** (https://kararsizim-blush.vercel.app, arkadaş testi; Vercel koruması yalnızca preview'larda; Supabase proje "kararsizim"). Kaldığımız yer ve bekleyen işler (oy gizliliği kararı O1, Firewall hız sınırı, hesap teyitleri) için **`docs/ilerleme-notlari.md`**'yi oku. Yerelde `DATABASE_URL` boşken SQLite kullanılır.
 - Bölüm 10 (güvenlik/gizlilik) pazarlık konusu değildir; çelişki varsa dur ve sor.
 - Yalnızca Bölüm 4'teki paketler; başkası gerekirse önce sor. Sürümler `requirements.txt`'te `==` ile sabit.
 - Kod İngilizce, kullanıcıya görünen tüm metinler Türkçe. E-posta adresi hiçbir yerde görünmez (yalnızca `/hesap/`'ta sahibine).
