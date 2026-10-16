@@ -19,7 +19,7 @@
   {% else %}
   <form class="vote-form" method="post" action="{% url 'polls:vote' poll.pk %}" data-vote-form>
     {% csrf_token %}
-    <input type="hidden" name="next" value="{{ request.get_full_path }}#poll-{{ poll.pk }}">
+    <input type="hidden" name="next" value="{{ next_path|default:request.get_full_path }}#poll-{{ poll.pk }}">
     <ul class="option-list">
       {% for option in poll.options.all %}
       <li><button type="submit" class="option option--button" name="option" value="{{ option.pk }}">{{ option.text }}</button></li>

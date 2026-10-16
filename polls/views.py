@@ -88,6 +88,15 @@ def delete(request, pk):
 RESULTS_MAX_IDS = 20
 
 
+def _requested_ids(request):
+    """?ids=1,2,3 -> [1, 2, 3]; gecersiz degerler atilir, en fazla RESULTS_MAX_IDS."""
+    return [
+        int(part)
+        for part in request.GET.get("ids", "").split(",")[:RESULTS_MAX_IDS]
+        if OPTION_ID_PATTERN.match(part)
+    ]
+
+
 @require_GET
 @never_cache
 def results(request):
@@ -96,11 +105,7 @@ def results(request):
     Gorunurluk kurali sayfalarla aynidir: toplam oy sayisi herkese, secenek bazli sonuclar yalnizca
     oy vermis kisiye ve anket sahibine verilir. Kullanici bilgisi, e-posta ve voter_key icermez.
     """
-    ids = [
-        int(part)
-        for part in request.GET.get("ids", "").split(",")[:RESULTS_MAX_IDS]
-        if OPTION_ID_PATTERN.match(part)
-    ]
+    ids = _requested_ids(request)
     items = []
     if ids:
         for poll in attach_vote_state(request, polls_queryset().filter(pk__in=ids)):
@@ -111,7 +116,26 @@ def results(request):
                     for o in poll.options.all()
                 ]
             items.append(item)
-    return JsonResponse({"ok": True, "polls": items})
+    # Akis sayfasi "bundan yeni anket var mi" diye sorar (after=<en buyuk bilinen id>).
+    new_ids = []
+    after = request.GET.get("after", "")
+    if OPTION_ID_PATTERN.match(after):
+        new_ids = list(
+            Poll.objects.filter(pk__gt=int(after))
+            .order_by("-pk")
+            .values_list("pk", flat=True)[:RESULTS_MAX_IDS]
+        )
+    return JsonResponse({"ok": True, "polls": items, "new_ids": new_ids})
+
+
+@require_GET
+@never_cache
+def cards(request):
+    """Akisa canli eklenecek yeni anket kartlari (HTML parcasi). Gorunurluk kurali sayfalarla aynidir."""
+    ids = _requested_ids(request)
+    polls = attach_vote_state(request, polls_queryset().filter(pk__in=ids)) if ids else []
+    # Kart icindeki "next" alani bu parcanin adresi degil, akis sayfasi olmali.
+    return render(request, "polls/_cards.html", {"polls": polls, "next_path": reverse("polls:feed")})
 
 
 def _wants_json(request):

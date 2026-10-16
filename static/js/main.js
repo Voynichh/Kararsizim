@@ -152,51 +152,57 @@
   }
 
   // Fetch ile oy verme. Her türlü hatada normal form gönderimine düşülür.
-  function initVoteForms() {
-    document.querySelectorAll("[data-vote-form]").forEach(function (form) {
-      form.addEventListener("submit", function (event) {
-        if (form.hasAttribute("data-no-ajax") || !window.fetch || !window.FormData) {
-          return;
-        }
-        var submitter = event.submitter;
-        if (!submitter || !submitter.name) {
-          return;
-        }
-        event.preventDefault();
-        var body = new URLSearchParams(new FormData(form, submitter));
-        // Anında geri bildirim: seçilen düğme hemen vurgulanır, sunucu yanıtı gelince sonuçlar açılır.
-        submitter.classList.add("option--chosen");
-        form.classList.add("vote-form--busy");
+  function bindVoteForm(form) {
+    if (form.hasAttribute("data-bound")) {
+      return;
+    }
+    form.setAttribute("data-bound", "");
+    form.addEventListener("submit", function (event) {
+      if (form.hasAttribute("data-no-ajax") || !window.fetch || !window.FormData) {
+        return;
+      }
+      var submitter = event.submitter;
+      if (!submitter || !submitter.name) {
+        return;
+      }
+      event.preventDefault();
+      var body = new URLSearchParams(new FormData(form, submitter));
+      // Anında geri bildirim: seçilen düğme hemen vurgulanır, sunucu yanıtı gelince sonuçlar açılır.
+      submitter.classList.add("option--chosen");
+      form.classList.add("vote-form--busy");
 
-        function fallback() {
-          submitter.classList.remove("option--chosen");
-          form.classList.remove("vote-form--busy");
-          form.setAttribute("data-no-ajax", "");
-          form.requestSubmit(submitter);
-        }
+      function fallback() {
+        submitter.classList.remove("option--chosen");
+        form.classList.remove("vote-form--busy");
+        form.setAttribute("data-no-ajax", "");
+        form.requestSubmit(submitter);
+      }
 
-        window
-          .fetch(form.getAttribute("action"), {
-            method: "POST",
-            body: body,
-            headers: { Accept: "application/json" },
-            credentials: "same-origin",
-          })
-          .then(function (response) {
-            if (!response.ok) {
-              throw new Error("vote failed");
-            }
-            return response.json();
-          })
-          .then(function (data) {
-            if (!data || data.ok !== true) {
-              throw new Error("vote failed");
-            }
-            showResults(form, data);
-          })
-          .catch(fallback);
-      });
+      window
+        .fetch(form.getAttribute("action"), {
+          method: "POST",
+          body: body,
+          headers: { Accept: "application/json" },
+          credentials: "same-origin",
+        })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("vote failed");
+          }
+          return response.json();
+        })
+        .then(function (data) {
+          if (!data || data.ok !== true) {
+            throw new Error("vote failed");
+          }
+          showResults(form, data);
+        })
+        .catch(fallback);
     });
+  }
+
+  function initVoteForms() {
+    document.querySelectorAll("[data-vote-form]").forEach(bindVoteForm);
   }
 
   // Canlı güncelleme: sayfadaki anketlerin sayıları birkaç saniyede bir yenilenir (F5 gerekmez).
@@ -230,21 +236,148 @@
     });
   }
 
-  function initLiveResults() {
-    var first = document.querySelector(".poll-card[data-live-url]");
-    if (!first || !window.fetch) {
+  // Silinen anketin kartı kaldırılır (detay sayfasında kısa bir bilgi gösterilir).
+  function removeCard(card) {
+    if (card.querySelector(".vote-form--busy")) {
       return;
     }
-    var url = first.getAttribute("data-live-url");
+    if (card.closest(".feed")) {
+      card.remove();
+      return;
+    }
+    var notice = document.createElement("section");
+    notice.className = "card";
+    var text = document.createElement("p");
+    text.textContent = "Bu anket silindi.";
+    notice.appendChild(text);
+    card.replaceWith(notice);
+  }
+
+  function initLiveResults() {
+    var source = document.querySelector("[data-live-url]");
+    if (!source || !window.fetch) {
+      return;
+    }
+    var url = source.getAttribute("data-live-url");
+    var feed = document.querySelector(".feed[data-feed-live]");
+    var cardsUrl = feed ? feed.getAttribute("data-cards-url") : null;
     var BASE_DELAY = 5000;
     var MAX_DELAY = 60000;
     var delay = BASE_DELAY;
     var timer = null;
     var busy = false;
+    var seenMax = 0; // bilinen en büyük anket id'si (daha büyükler "yeni" sayılır)
+    var pending = []; // sayfa başında değilken bekleyen yeni anket id'leri
+    var banner = null;
+
+    function domMaxId() {
+      var max = 0;
+      document.querySelectorAll(".poll-card[data-poll-id]").forEach(function (card) {
+        max = Math.max(max, parseInt(card.getAttribute("data-poll-id"), 10) || 0);
+      });
+      return max;
+    }
+    seenMax = domMaxId();
 
     function schedule() {
       window.clearTimeout(timer);
       timer = window.setTimeout(tick, delay);
+    }
+
+    function hideBanner() {
+      if (banner) {
+        banner.remove();
+        banner = null;
+      }
+    }
+
+    function showBanner() {
+      if (!banner) {
+        banner = document.createElement("button");
+        banner.type = "button";
+        banner.className = "btn btn--primary btn--block new-polls";
+        banner.addEventListener("click", function () {
+          window.scrollTo(0, 0);
+          insertPending();
+        });
+        feed.parentNode.insertBefore(banner, feed);
+      }
+      banner.textContent =
+        pending.length === 1 ? "1 yeni anket · Göster" : pending.length + " yeni anket · Göster";
+    }
+
+    // Yeni kartlar sunucudan HTML parçası olarak alınır (kullanıcı metni orada kaçışlanmıştır) ve
+    // DOMParser ile ayrıştırılıp düğümler olarak (metin olarak değil) akışın başına eklenir.
+    function insertPending() {
+      if (!pending.length || busy) {
+        return;
+      }
+      var ids = pending.slice(0, 20);
+      busy = true;
+      window
+        .fetch(cardsUrl + "?ids=" + ids.join(","), {
+          headers: { Accept: "text/html" },
+          credentials: "same-origin",
+        })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("cards failed");
+          }
+          return response.text();
+        })
+        .then(function (html) {
+          var doc = new DOMParser().parseFromString(html, "text/html");
+          var fresh = Array.prototype.slice.call(doc.querySelectorAll(".poll-card"));
+          var anchor = feed.firstChild;
+          fresh.forEach(function (card) {
+            var id = card.getAttribute("data-poll-id");
+            if (feed.querySelector('.poll-card[data-poll-id="' + id + '"]')) {
+              return;
+            }
+            var node = document.importNode(card, true);
+            feed.insertBefore(node, anchor);
+            node.querySelectorAll("[data-vote-form]").forEach(bindVoteForm);
+            fillBars(node);
+          });
+          var empty = document.querySelector("[data-empty-state]");
+          if (empty && fresh.length) {
+            empty.remove();
+          }
+          pending = pending.filter(function (id) {
+            return ids.indexOf(id) === -1;
+          });
+          if (!pending.length) {
+            hideBanner();
+          } else {
+            showBanner();
+          }
+        })
+        .catch(function () {
+          delay = Math.min(delay * 2, MAX_DELAY);
+        })
+        .then(function () {
+          busy = false;
+        });
+    }
+
+    function handleNewIds(newIds) {
+      newIds.forEach(function (id) {
+        seenMax = Math.max(seenMax, id);
+        var key = String(id);
+        if (pending.indexOf(key) === -1 && !document.querySelector('.poll-card[data-poll-id="' + key + '"]')) {
+          pending.push(key);
+        }
+      });
+      if (!pending.length) {
+        return;
+      }
+      // Sayfanın başındaysa kartlar kendiliğinden eklenir; aşağıda okuyorsa kayma olmasın diye
+      // sabit bir "yeni anket" düğmesi gösterilir.
+      if (window.scrollY < 120) {
+        window.setTimeout(insertPending, 0);
+      } else {
+        showBanner();
+      }
     }
 
     function tick() {
@@ -261,12 +394,16 @@
           ids.push(id);
         }
       });
-      if (!ids.length) {
+      if (!ids.length && !feed) {
         return;
+      }
+      var query = "?ids=" + ids.join(",");
+      if (feed) {
+        query += "&after=" + Math.max(seenMax, domMaxId());
       }
       busy = true;
       window
-        .fetch(url + "?ids=" + ids.join(","), {
+        .fetch(url + query, {
           headers: { Accept: "application/json" },
           credentials: "same-origin",
         })
@@ -280,13 +417,24 @@
           if (!data || data.ok !== true) {
             throw new Error("live failed");
           }
+          var alive = {};
           data.polls.forEach(function (item) {
+            alive[String(item.id)] = true;
             // Oy verme sürerken (form meşgulken) o kartın sayıları ezilmez.
             var card = cards[String(item.id)];
             if (card && !card.querySelector(".vote-form--busy")) {
               updateCard(card, item);
             }
           });
+          // İstenip de dönmeyen anket silinmiştir.
+          ids.forEach(function (id) {
+            if (!alive[id]) {
+              removeCard(cards[id]);
+            }
+          });
+          if (feed && data.new_ids && data.new_ids.length) {
+            handleNewIds(data.new_ids);
+          }
           delay = BASE_DELAY;
         })
         .catch(function () {

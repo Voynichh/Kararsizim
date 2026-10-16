@@ -9,13 +9,14 @@
   <a class="btn btn--primary btn--block" href="{% url 'polls:create' %}">Anket aç</a>
 </div>
 
-{% if polls %}
-  <div class="feed">
-    {% for poll in polls %}
-      {% include "partials/poll_card.html" with link=True %}
-    {% endfor %}
-  </div>
+{# Canlı güncelleme: yalnızca ilk sayfada yeni anketler kendiliğinden eklenir (data-feed-live). #}
+<div class="feed" data-live-url="{% url 'polls:results' %}" data-cards-url="{% url 'polls:cards' %}"{% if page.number == 1 %} data-feed-live{% endif %}>
+  {% for poll in polls %}
+    {% include "partials/poll_card.html" with link=True %}
+  {% endfor %}
+</div>
 
+{% if polls %}
   {% if page.has_other_pages %}
   <nav class="pager" aria-label="Sayfalar">
     {% if page.has_previous %}
@@ -32,7 +33,7 @@
   </nav>
   {% endif %}
 {% else %}
-  <section class="empty-state">
+  <section class="empty-state" data-empty-state>
     <p class="empty-state__title">Henüz kimse kararsız değil.</p>
     <p class="empty-state__text"><a href="{% url 'polls:create' %}">İlk anketi sen aç!</a></p>
   </section>

@@ -536,6 +536,14 @@ main.container > .card + .card {
   opacity: 0.5;
 }
 
+.new-polls {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
 .option--chosen {
   border-color: var(--accent);
   background: var(--accent-soft);

@@ -450,7 +450,7 @@ class LiveResultsTests(VoteTestCase):
         response = self.live(ids=f"abc,-1,{other.pk},1e3,,{self.poll.pk}")
         ids = sorted(item["id"] for item in response.json()["polls"])
         self.assertEqual(ids, sorted([self.poll.pk, other.pk]))
-        self.assertEqual(self.live(ids="").json(), {"ok": True, "polls": []})
+        self.assertEqual(self.live(ids="").json(), {"ok": True, "polls": [], "new_ids": []})
 
     def test_at_most_twenty_ids_are_read(self):
         polls = [make_poll(self.author, f"Soru numarası {i} burada?") for i in range(25)]
@@ -478,6 +478,89 @@ class LiveResultsTests(VoteTestCase):
         self.assertIn(f'data-poll-id="{self.poll.pk}"', html)
         self.assertIn('data-live-url="/anket/sonuclar/"', html)
         self.assertIn(f'data-option-id="{self.sinema.pk}"', html)
+
+
+class FeedLiveUpdateTests(VoteTestCase):
+    """Yeni acilan / silinen anketlerin F5'siz yansimasi icin sunucu tarafi."""
+
+    def live(self, query, client=None):
+        return (client or self.client).get(f"/anket/sonuclar/?{query}")
+
+    def test_new_ids_lists_polls_newer_than_after(self):
+        newer = [make_poll(self.author, f"Yeni soru numarası {i} burada?") for i in range(3)]
+        data = self.live(f"ids={self.poll.pk}&after={self.poll.pk}").json()
+        self.assertEqual(data["new_ids"], [p.pk for p in reversed(newer)])  # en yeni once
+
+    def test_new_ids_is_empty_when_nothing_is_newer_or_after_missing_or_invalid(self):
+        self.assertEqual(self.live(f"ids={self.poll.pk}&after={self.poll.pk}").json()["new_ids"], [])
+        self.assertEqual(self.live(f"ids={self.poll.pk}").json()["new_ids"], [])
+        self.assertEqual(self.live("ids=&after=abc").json()["new_ids"], [])
+        self.assertEqual(self.live("ids=&after=-1").json()["new_ids"], [])
+
+    def test_new_ids_is_capped_at_twenty(self):
+        for i in range(25):
+            make_poll(self.author, f"Kalabalık soru {i} burada?")
+        self.assertEqual(len(self.live("ids=&after=0").json()["new_ids"]), 20)
+
+    def test_deleted_poll_is_missing_from_response(self):
+        other = make_poll(self.author, "Silinecek anket burada?")
+        other.delete()
+        data = self.live(f"ids={self.poll.pk},{other.pk}").json()
+        self.assertEqual([p["id"] for p in data["polls"]], [self.poll.pk])
+
+    def test_cards_returns_html_fragment_with_escaped_text(self):
+        evil = make_poll(self.author, "<script>alert(1)</script> soru metni")
+        response = self.client.get(f"/anket/kartlar/?ids={evil.pk}")
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertNotIn("<script>alert(1)</script>", html)
+        self.assertIn("&lt;script&gt;", html)
+        self.assertIn(f'data-poll-id="{evil.pk}"', html)
+        self.assertNotIn("<html", html)
+        self.assertIn("no-store", response["Cache-Control"])
+
+    def test_cards_next_field_points_to_feed_not_to_fragment(self):
+        html = self.client.get(f"/anket/kartlar/?ids={self.poll.pk}").content.decode()
+        self.assertIn(f'name="next" value="/#poll-{self.poll.pk}"', html)
+        self.assertNotIn("kartlar", html)
+
+    def test_cards_respect_result_visibility(self):
+        voter = Client()
+        self.vote(self.sinema, client=voter)
+        voted_html = voter.get(f"/anket/kartlar/?ids={self.poll.pk}").content.decode()
+        self.assertIn("data-results", voted_html)
+        self.assertIn("✓ senin oyun", voted_html)
+        stranger_html = Client().get(f"/anket/kartlar/?ids={self.poll.pk}").content.decode()
+        self.assertNotIn("data-results", stranger_html)
+        self.assertIn("data-vote-form", stranger_html)
+
+    def test_cards_has_no_identity_and_ignores_bad_ids(self):
+        html = self.client.get(f"/anket/kartlar/?ids=abc,{self.poll.pk},-5").content.decode()
+        self.assertEqual(html.count('class="card poll-card"'), 1)
+        for forbidden in ("yazar@example.com", "uye@example.com", "voter_key"):
+            self.assertNotIn(forbidden, html)
+
+    def test_cards_empty_ids_returns_empty_body(self):
+        self.assertEqual(self.client.get("/anket/kartlar/?ids=").content.strip(), b"")
+
+    def test_cards_post_not_allowed(self):
+        self.assertEqual(self.client.post("/anket/kartlar/").status_code, 405)
+
+    def test_feed_first_page_is_live_and_later_pages_are_not(self):
+        for i in range(25):
+            make_poll(self.author, f"Sayfalama sorusu {i} burada?")
+        first = self.client.get("/").content.decode()
+        self.assertIn("data-feed-live", first)
+        self.assertIn('data-cards-url="/anket/kartlar/"', first)
+        second = self.client.get("/?page=2").content.decode()
+        self.assertNotIn("data-feed-live", second)
+
+    def test_empty_feed_still_has_live_container_and_empty_state(self):
+        Poll.objects.all().delete()
+        html = self.client.get("/").content.decode()
+        self.assertIn("data-feed-live", html)
+        self.assertIn("data-empty-state", html)
+        self.assertIn("Henüz kimse kararsız değil.", html)
 
 
 class AccountDeletionVoteTests(VoteTestCase):
