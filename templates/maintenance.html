@@ -1,0 +1,28 @@
+{% load static %}<!doctype html>
+{# Bakım sayfası bağlamsız render edilir (oturum/mesaj yok); bu yüzden base.html'den türetilmez. #}
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex">
+  <title>Bakımdayız — kararsızım</title>
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="logo" href="/">kararsızım<span class="logo__q" aria-hidden="true">?</span></a>
+    </div>
+  </header>
+  <main class="container">
+    <section class="error-page">
+      <p class="error-page__code">503</p>
+      <h1 class="error-page__title">Bakımdayız.</h1>
+      <p class="error-page__text">Kısa süreliğine kapalıyız. Birazdan tekrar dene; anketlerin ve oyların yerinde duruyor.</p>
+      <a class="btn btn--primary" href="/">Tekrar dene</a>
+    </section>
+  </main>
+</body>
+</html>

@@ -87,6 +87,16 @@ python manage.py createsuperuser  # e-posta + kullanıcı adı + güçlü ve ben
   ```
 - [ ] `/admin/` **404** veriyor; admin yalnızca `ADMIN_URL` yolunda açılıyor. (`ADMIN_ENABLED=False` verilirse panel tamamen kapanır, her yol 404.)
 
+### Siteyi geçici olarak kapatmak (bakım modu)
+
+Vercel → Settings → Environment Variables → `MAINTENANCE_MODE` = `True` (Production) → **Redeploy**. Tüm sayfalar 503 "Bakımdayız" gösterir, JSON istekler 503 JSON döner; yalnızca admin yolu (açıksa) ve `/static/` açık kalır, veri etkilenmez. Açmak için değişkeni sil (ya da `False` yap) → Redeploy.
+
+Daha sert seçenekler: Vercel'de **Pause Project** (siteyi tamamen durdurur) ve Supabase'de **Pause project** (veritabanını durdurur; önce Vercel, sonra Supabase kapatılır, açarken tersi).
+
+### Admin panelini kapatıp açmak
+
+Panel varsayılan olarak açıktır (`ADMIN_URL` yolunda). Kapatmak: Vercel'de `ADMIN_ENABLED` = `False` (Production) → Redeploy; yol hiç kayıtlı olmaz, her şey 404 verir. Açmak: değişkeni sil (ya da `True` yap) → Redeploy.
+
 ### Panel olmadan yönetim (isteğe bağlı)
 
 Parola sıfırlama ve hesap işleri için web paneli gerekmez; yerelden komutla yapılır (`.env` Session pooler adresini içerir, yani **canlı veritabanına** yazar):

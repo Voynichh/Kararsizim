@@ -1,4 +1,6 @@
 from django.conf import settings
+from django.http import HttpResponse, JsonResponse
+from django.template.loader import render_to_string
 
 CSP_DIRECTIVES = [
     "default-src 'self'",
@@ -45,3 +47,31 @@ class SecurityHeadersMiddleware:
         if not settings.ALLOW_SEARCH_INDEXING:
             response.headers["X-Robots-Tag"] = "noindex, nofollow"
         return response
+
+
+class MaintenanceMiddleware:
+    """MAINTENANCE_MODE=True iken siteyi kapatir: sayfalar 503 "Bakimdayiz", JSON istekler 503 JSON.
+
+    Admin yolu (acikssa) ve statik dosyalar acik kalir; boylece yonetici bakim sirasinda calisabilir.
+    SecurityHeadersMiddleware'in icinde calisir, yani 503 yanitina da CSP vb. basliklar eklenir.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if settings.MAINTENANCE_MODE and not self._exempt(request.path):
+            if "application/json" in request.headers.get("Accept", ""):
+                response = JsonResponse({"ok": False, "error": "Bakımdayız, birazdan tekrar dene."}, status=503)
+            else:
+                response = HttpResponse(render_to_string("maintenance.html"), status=503)
+            response["Retry-After"] = "600"
+            response["Cache-Control"] = "no-store"
+            return response
+        return self.get_response(request)
+
+    @staticmethod
+    def _exempt(path):
+        if path.startswith("/" + settings.STATIC_URL.lstrip("/")):
+            return True
+        return settings.ADMIN_ENABLED and path.startswith("/" + settings.ADMIN_URL)

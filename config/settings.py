@@ -52,6 +52,10 @@ ADMIN_URL = os.environ.get("ADMIN_URL", "admin/").strip().strip("/") + "/"
 # ve her sey temali 404 doner (panel bir sure kullanilmayacaksa saldiri yuzeyini sifirlar).
 ADMIN_ENABLED = env_bool("ADMIN_ENABLED", True)
 
+# Bakim modu: True iken tum sayfalar 503 "Bakimdayiz" doner (yalnizca admin yolu ve /static/ acik kalir).
+# Vercel'de MAINTENANCE_MODE=True + Redeploy ile acilir, kaldirilip Redeploy ile kapatilir.
+MAINTENANCE_MODE = env_bool("MAINTENANCE_MODE", False)
+
 # Yalnizca Vercel'de True: istemci IP'si proxy basligindan okunur (core/net.py).
 TRUST_PROXY_IP_HEADER = env_bool("TRUST_PROXY_IP_HEADER", False)
 
@@ -75,6 +79,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "config.middleware.SecurityHeadersMiddleware",
+    "config.middleware.MaintenanceMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
