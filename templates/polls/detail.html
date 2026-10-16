@@ -8,8 +8,12 @@
 
 <div class="detail-actions">
   <a href="{% url 'polls:feed' %}">← Tüm anketler</a>
-  {% if user.is_authenticated and user.pk == poll.author_id %}
-    <a class="btn btn--danger" href="{% url 'polls:delete' poll.pk %}">Anketi sil</a>
-  {% endif %}
+  <div class="detail-actions__buttons">
+    {# Pano API'si yoksa (eski tarayıcı, http) düğme hiç görünmez; JS gösterir. #}
+    <button type="button" class="btn" data-copy-link hidden>Linki kopyala</button>
+    {% if user.is_authenticated and user.pk == poll.author_id %}
+      <a class="btn btn--danger" href="{% url 'polls:delete' poll.pk %}">Anketi sil</a>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}

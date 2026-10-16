@@ -195,10 +195,39 @@
     });
   }
 
+  // "Linki kopyala": yalnızca Pano API'si varsa gösterilir (yoksa düğme gizli kalır).
+  function initCopyLink() {
+    var button = document.querySelector("[data-copy-link]");
+    if (!button || !navigator.clipboard || !navigator.clipboard.writeText) {
+      return;
+    }
+    var label = button.textContent;
+    button.hidden = false;
+    button.addEventListener("click", function () {
+      // Sorgu dizisi ve parça (#...) olmadan, yalnızca anketin adresi.
+      var url = window.location.origin + window.location.pathname;
+      navigator.clipboard.writeText(url).then(
+        function () {
+          button.textContent = "Kopyalandı ✓";
+          window.setTimeout(function () {
+            button.textContent = label;
+          }, 2000);
+        },
+        function () {
+          button.textContent = "Kopyalanamadı";
+          window.setTimeout(function () {
+            button.textContent = label;
+          }, 2000);
+        }
+      );
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     initToasts();
     initOptionList();
     fillBars(document);
     initVoteForms();
+    initCopyLink();
   });
 })();

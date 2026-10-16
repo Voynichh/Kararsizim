@@ -31,13 +31,26 @@ def feed(request):
     # Gecersiz ya da aralik disi sayfa numarasi hata vermez; ilk/son sayfaya dusulur.
     page = paginator.get_page(request.GET.get("page"))
     polls = attach_vote_state(request, page.object_list)
-    return render(request, "polls/feed.html", {"page": page, "polls": polls})
+    return render(
+        request,
+        "polls/feed.html",
+        {"page": page, "polls": polls, "canonical_url": request.build_absolute_uri(request.path)},
+    )
 
 
 def detail(request, pk):
     poll = get_object_or_404(polls_queryset(), pk=pk)
     (poll,) = attach_vote_state(request, [poll])
-    return render(request, "polls/detail.html", {"poll": poll})
+    # Baglanti onizlemesi (Open Graph): soru ve secenekler. Sablonda otomatik kacislanir; oy sonucu icermez.
+    options = " / ".join(option.text for option in poll.options.all())
+    context = {
+        "poll": poll,
+        "og_title": poll.question,
+        "meta_description": f"{options} — sen ne dersin?"[:200],
+        # Kanonik adres: sorgu dizisi (?next=... vb.) olmadan.
+        "canonical_url": request.build_absolute_uri(request.path),
+    }
+    return render(request, "polls/detail.html", context)
 
 
 @login_required

@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>{% block title %}kararsızım{% endblock %}</title>
+  <meta name="description" content="{{ meta_description|default:'Kararsız kaldığın konuları anket olarak aç, başkalarının fikrini öğren.' }}">
+  <meta property="og:site_name" content="kararsızım">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="tr_TR">
+  <meta property="og:title" content="{{ og_title|default:'kararsızım — kararsız kaldığında sor' }}">
+  <meta property="og:description" content="{{ meta_description|default:'Kararsız kaldığın konuları anket olarak aç, başkalarının fikrini öğren.' }}">
+  {% if canonical_url %}<meta property="og:url" content="{{ canonical_url }}">{% endif %}
+  <meta name="twitter:card" content="summary">
   <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
 </head>

@@ -612,6 +612,13 @@ main.container > .card + .card {
   margin-top: 20px;
 }
 
+.detail-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .options {
   margin: 0 0 20px;
   padding: 0;

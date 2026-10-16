@@ -42,4 +42,6 @@ class SecurityHeadersMiddleware:
         # Daha siki bir deger (ornegin never_cache) koyan view'lara dokunulmaz.
         if "Cache-Control" not in response.headers:
             response.headers["Cache-Control"] = "private, no-cache"
+        if not settings.ALLOW_SEARCH_INDEXING:
+            response.headers["X-Robots-Tag"] = "noindex, nofollow"
         return response

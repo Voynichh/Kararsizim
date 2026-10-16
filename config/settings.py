@@ -51,6 +51,10 @@ ADMIN_URL = os.environ.get("ADMIN_URL", "admin/").strip().strip("/") + "/"
 # Yalnizca Vercel'de True: istemci IP'si proxy basligindan okunur (core/net.py).
 TRUST_PROXY_IP_HEADER = env_bool("TRUST_PROXY_IP_HEADER", False)
 
+# Prototip asamasinda arama motorlari siteyi indekslemesin (X-Robots-Tag + robots.txt).
+# Halka acik yayinda bilerek ALLOW_SEARCH_INDEXING=True yapilir.
+ALLOW_SEARCH_INDEXING = env_bool("ALLOW_SEARCH_INDEXING", False)
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -173,6 +177,13 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Hash'li dosya adlari (cache-busting). Vercel build sirasinda collectstatic'i kendisi calistirir ve
+# ManifestStaticFilesStorage'i destekler. DEBUG=True iken adresler hash'siz kalir.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "config.storage.ForgivingManifestStaticFilesStorage"},
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

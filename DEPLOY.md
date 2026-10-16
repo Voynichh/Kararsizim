@@ -86,6 +86,8 @@ python manage.py createsuperuser  # e-posta + kullanıcı adı + güçlü ve ben
   curl -sI https://kararsizim.vercel.app/ | grep -i -E "strict-transport|content-security|x-frame"
   ```
 - [ ] `/admin/` **404** veriyor; admin yalnızca `ADMIN_URL` yolunda açılıyor.
+- [ ] Statik dosyalar hash'li adla geliyor (sayfa kaynağında `main.<12 hane>.css`) ve yanıt başlıklarında `cache-control: public, max-age=31536000, immutable` ile `x-content-type-options: nosniff` var (F12 → Network → `main.….css` → Headers). Arama motorları kapalı: `…/robots.txt` içinde `Disallow: /` yazıyor.
+- [ ] Anket detay sayfasında "Linki kopyala" düğmesi çalışıyor; yapıştırınca `…/anket/<id>/` (sorgu dizisiz) adresi çıkıyor.
 - [ ] Rastgele bir adres (`/yok/`) Django debug ekranı değil, yalnızca "Aradığın sayfayı bulamadık." diyen temalı 404 gösteriyor (adres listesi, `admin/`, ayar veya hata detayı görünmemeli). Vercel'de `DEBUG` yanlışlıkla `True` kalırsa uygulama zaten başlamaz (`DEBUG=True Vercel'de kullanılamaz` hatası; Vercel → Deployments → build/runtime loglarında görünür).
 - [ ] **Data API kapalı:** aşağıdaki istek veri döndürmemeli (hata veya 4xx beklenir):
   ```bash
@@ -136,6 +138,10 @@ Dashboard'daki *Logs → Postgres* ekranında ERROR sayısının yüksek görün
 ## Testler gerçek veritabanına bağlanmaz
 
 `python manage.py test` komutu `.env`'deki `DATABASE_URL`'i **yok sayar** ve SQLite kullanır; bu yüzden yerel `.env`'de Supabase adresi dururken testleri güvenle çalıştırabilirsin. Testleri bilerek başka bir PostgreSQL'de çalıştırmak istersen `TEST_DATABASE_URL` ver.
+
+## Konsoldaki sarı "Permissions-Policy" uyarıları
+
+`Error with Permissions-Policy header: Unrecognized feature: 'browsing-topics'` (ve `run-ad-auction`, `attribution-reporting` gibi Privacy Sandbox özellikleri) uyarıları bizim başlığımızdan gelmez: bizim `Permissions-Policy` başlığımız yalnızca `camera`, `microphone`, `geolocation`, `payment` içerir ve geçerlidir. Uyarılar tarayıcının tanımadığı özellik adlarını bildiren başka bir başlıktan (Vercel/tarayıcı tarafı) gelir; zararsızdır, görmezden gelinebilir.
 
 ## `check --deploy` notu
 

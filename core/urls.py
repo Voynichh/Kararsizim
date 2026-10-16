@@ -6,4 +6,5 @@ app_name = "core"
 
 urlpatterns = [
     path("gizlilik/", views.privacy, name="privacy"),
+    path("robots.txt", views.robots_txt, name="robots"),
 ]
