@@ -149,7 +149,15 @@ class SettingsSafetyTests(SimpleTestCase):
         self.assertIn("DEBUG=True Vercel", result.stderr)
 
     def test_debug_false_on_vercel_starts_normally(self):
-        result = self._run_settings_import(DEBUG="False", SECRET_KEY="x" * 50, VERCEL="1", ADMIN_URL="yonetim-test/")
+        # Vercel'de DATABASE_URL zorunlu; yereldeki .env'e bagli kalmasin diye sahte adres verilir
+        # (ayar importu yalnizca adresi ayristirir, veritabanina baglanmaz).
+        result = self._run_settings_import(
+            DEBUG="False",
+            SECRET_KEY="x" * 50,
+            VERCEL="1",
+            ADMIN_URL="yonetim-test/",
+            DATABASE_URL="postgres://test:test@localhost:5432/test",
+        )
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_debug_true_is_still_allowed_locally(self):
